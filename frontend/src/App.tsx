@@ -1,37 +1,28 @@
-import { ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import heroImage from './assets/lifesync-hero-v2.png'
-import { BrandWordmark } from './components/BrandWordmark'
-import { LanguageSelector } from './components/LanguageSelector'
-import { ProgressPath } from './components/ProgressPath'
 import { translations, type LanguageCode } from './data/translations'
+import { ConfirmPage } from './pages/ConfirmPage'
+import { LandingPage } from './pages/LandingPage'
+import { SituationPage } from './pages/SituationPage'
+
+const LANGUAGE_KEY = 'lifesync-language'
+
+function getInitialLanguage(): LanguageCode {
+  const saved = localStorage.getItem(LANGUAGE_KEY)
+  return saved && saved in translations ? saved as LanguageCode : 'ko'
+}
 
 function App() {
-  const [language, setLanguage] = useState<LanguageCode>('ko')
-  const content = translations[language]
+  const [language, setLanguage] = useState<LanguageCode>(getInitialLanguage)
+  useEffect(() => { localStorage.setItem(LANGUAGE_KEY, language); document.documentElement.lang = language }, [language])
 
-  return (
-    <main className="landing-shell" style={{ backgroundImage: `url(${heroImage})` }}>
-      <header className="site-header">
-        <BrandWordmark />
-        <LanguageSelector value={language} onChange={setLanguage} />
-      </header>
-
-      <section className="hero-section" id="main-content" lang={language}>
-        <div className="hero-copy">
-          <p className="eyebrow">KOREA PATH · ADMINISTRATIVE NAVIGATION</p>
-          <h1>{content.title}</h1>
-          <p className="description">{content.description}</p>
-          <button className="start-button" type="button" onClick={() => console.log('start')}>
-            <span>{content.button}</span>
-            <ArrowRight size={19} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-        </div>
-        <ProgressPath steps={content.progress} label={content.progressLabel} />
-      </section>
-    </main>
-  )
+  return <BrowserRouter><Routes>
+    <Route path="/" element={<LandingPage language={language} onLanguageChange={setLanguage} />} />
+    <Route path="/situation" element={<SituationPage language={language} onLanguageChange={setLanguage} />} />
+    <Route path="/confirm" element={<ConfirmPage language={language} onLanguageChange={setLanguage} />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes></BrowserRouter>
 }
 
 export default App
