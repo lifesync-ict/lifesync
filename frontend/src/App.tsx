@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { translations, type LanguageCode } from './data/translations'
 import { ConfirmPage } from './pages/ConfirmPage'
+import { ActionsPage } from './pages/ActionsPage'
 import { LandingPage } from './pages/LandingPage'
 import { SituationPage } from './pages/SituationPage'
 
@@ -21,6 +22,7 @@ function App() {
     <Route path="/" element={<LandingPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="/situation" element={<SituationPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="/confirm" element={<ConfirmPage language={language} onLanguageChange={setLanguage} />} />
+    <Route path="/actions" element={<ActionsPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes></BrowserRouter>
 }
