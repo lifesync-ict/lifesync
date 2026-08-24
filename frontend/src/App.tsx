@@ -6,6 +6,7 @@ import { ConfirmPage } from './pages/ConfirmPage'
 import { ActionsPage } from './pages/ActionsPage'
 import { LandingPage } from './pages/LandingPage'
 import { SituationPage } from './pages/SituationPage'
+import { HandoffPage } from './pages/HandoffPage'
 
 const LANGUAGE_KEY = 'lifesync-language'
 
@@ -23,6 +24,7 @@ function App() {
     <Route path="/situation" element={<SituationPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="/confirm" element={<ConfirmPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="/actions" element={<ActionsPage language={language} onLanguageChange={setLanguage} />} />
+    <Route path="/handoff" element={<HandoffPage language={language} onLanguageChange={setLanguage} />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes></BrowserRouter>
 }
