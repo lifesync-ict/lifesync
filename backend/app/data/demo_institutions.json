@@ -1,0 +1,5 @@
+[
+  {"id":"employment-center-candidate","type":"employment_center","name":null,"roleKey":"employment_permission_and_workplace_change_check","reasonKey":"confirm_employment_process","jurisdiction":null,"address":null,"phone":null,"sourceUrl":null,"verificationStatus":"review_required","cautionKey":"exact_institution_check_required"},
+  {"id":"immigration-office-candidate","type":"immigration_office","name":null,"roleKey":"visa_status_and_immigration_process_check","reasonKey":"confirm_stay_procedure","jurisdiction":null,"address":null,"phone":null,"sourceUrl":null,"verificationStatus":"review_required","cautionKey":"exact_institution_check_required"},
+  {"id":"worker-support-center-candidate","type":"worker_support_center","name":null,"roleKey":"interpretation_and_consultation_support","reasonKey":"prepare_communication_support","jurisdiction":null,"address":null,"phone":null,"sourceUrl":null,"verificationStatus":"review_required","cautionKey":"exact_institution_check_required"}
+]

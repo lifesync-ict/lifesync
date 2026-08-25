@@ -1,0 +1,44 @@
+[
+  {
+    "id": "demo-worker-workplace-change-check",
+    "party": "worker",
+    "titleKey": "worker_confirm_workplace_change_process",
+    "descriptionKey": "worker_confirm_process_description",
+    "ruleNameKey": "workplace_change_review_rule",
+    "issuingAgencyKey": "employment_authority_check_required",
+    "sourceTitleKey": "official_guidance_link_pending",
+    "applicabilityNoteKey": "e9_manufacturing_demo_only",
+    "verificationStatus": "review_required",
+    "evidenceId": "evidence-employment-review",
+    "deadline": null,
+    "documentStatus": "review_required"
+  },
+  {
+    "id": "demo-employer-document-check",
+    "party": "employer",
+    "titleKey": "employer_document_provision_check",
+    "descriptionKey": "employer_document_provision_description",
+    "ruleNameKey": "employment_document_review_rule",
+    "issuingAgencyKey": "employment_authority_check_required",
+    "sourceTitleKey": "official_guidance_link_pending",
+    "applicabilityNoteKey": "document_status_requires_confirmation",
+    "verificationStatus": "review_required",
+    "evidenceId": "evidence-document-review",
+    "deadline": null,
+    "documentStatus": "review_required"
+  },
+  {
+    "id": "demo-institution-status-check",
+    "party": "institution",
+    "titleKey": "institution_confirm_status_and_process",
+    "descriptionKey": "institution_confirm_status_description",
+    "ruleNameKey": "immigration_process_review_rule",
+    "issuingAgencyKey": "immigration_authority_check_required",
+    "sourceTitleKey": "official_guidance_link_pending",
+    "applicabilityNoteKey": "visa_process_requires_official_confirmation",
+    "verificationStatus": "review_required",
+    "evidenceId": "evidence-immigration-review",
+    "deadline": null,
+    "documentStatus": "review_required"
+  }
+]
