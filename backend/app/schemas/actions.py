@@ -24,10 +24,10 @@ class ObligationItem(ApiModel):
     party: ResponsibleParty
     title_key: str
     description_key: str
-    deadline: None = None
+    deadline: str | None = None
     deadline_label_key: str = "official_deadline_check_required"
-    days_remaining: None = None
-    urgency: Literal["unknown"] = "unknown"
+    days_remaining: int | None = None
+    urgency: Literal["overdue", "today", "urgent", "normal", "unknown"] = "unknown"
     required_documents: list[RequiredDocument]
     evidence_id: str
     status: Literal["pending"] = "pending"
@@ -39,8 +39,8 @@ class RuleEvidence(ApiModel):
     issuing_agency_key: str
     source_title_key: str
     source_url: str | None = None
-    effective_from: None = None
-    checked_at: None = None
+    effective_from: str | None = None
+    checked_at: str | None = None
     verification_status: VerificationStatus = VerificationStatus.REVIEW_REQUIRED
     applicability_note_key: str
 

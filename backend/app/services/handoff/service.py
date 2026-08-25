@@ -1,4 +1,6 @@
 from app.schemas.common import ApiMeta, VerificationStatus
+from app.official_guidance.models import OfficialVerificationStatus
+from app.official_guidance.repository import safe_official_institutions
 from app.schemas.handoff import (
     EvidenceBundleItem, InstitutionCandidate, PrepareHandoffRequest, PrepareHandoffResponse,
 )
@@ -13,7 +15,26 @@ class HandoffService:
                 questions_to_ask=["question_exact_institution"], privacy_notice_key="no_personal_information_included",
                 warnings=["action_guidance_required"], meta=ApiMeta(),
             )
-        institutions = [InstitutionCandidate(**item) for item in load_demo_json("demo_institutions.json")]
+        demo_by_type = {item["type"]: item for item in load_demo_json("demo_institutions.json")}
+        institutions = []
+        for official in safe_official_institutions():
+            fallback = demo_by_type[official.institution_type]
+            verified = official.verification_status is OfficialVerificationStatus.VERIFIED
+            institutions.append(InstitutionCandidate(
+                id=official.id,
+                type=official.institution_type,
+                name=official.official_name if verified else None,
+                role_key=fallback["roleKey"],
+                reason_key=fallback["reasonKey"],
+                jurisdiction=official.jurisdiction if verified else None,
+                address=official.address if verified else None,
+                phone=official.phone if verified else None,
+                source_url=str(official.official_url) if verified and official.official_url else None,
+                verification_status=VerificationStatus.VERIFIED if verified else VerificationStatus.REVIEW_REQUIRED,
+                caution_key="official_institution_verified" if verified else "exact_institution_check_required",
+            ))
+        if not institutions:
+            institutions = [InstitutionCandidate(**item) for item in demo_by_type.values()]
         selected = set(request.selected_evidence_item_ids)
         facts = request.confirmed_facts
         bundle = [

@@ -23,6 +23,10 @@ def load_demo_json(filename: str) -> list[dict[str, Any]]:
 
 
 def demo_data_ready() -> bool:
+    from app.official_guidance.repository import load_official_guidance, load_official_institutions
+
     load_demo_json("demo_rules.json")
     load_demo_json("demo_institutions.json")
+    load_official_guidance()
+    load_official_institutions()
     return True

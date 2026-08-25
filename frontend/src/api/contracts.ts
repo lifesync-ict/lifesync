@@ -75,8 +75,8 @@ export type ApiRuleEvidence = {
   issuingAgencyKey: string
   sourceTitleKey: string
   sourceUrl?: string | null
-  effectiveFrom?: null
-  checkedAt?: null
+  effectiveFrom?: string | null
+  checkedAt?: string | null
   verificationStatus: ApiVerificationStatus
   applicabilityNoteKey: string
 }
@@ -85,10 +85,10 @@ export type ApiObligationItem = {
   party: 'worker' | 'employer' | 'institution'
   titleKey: string
   descriptionKey: string
-  deadline?: null
+  deadline?: string | null
   deadlineLabelKey: string
-  daysRemaining?: null
-  urgency: 'unknown'
+  daysRemaining?: number | null
+  urgency: 'overdue' | 'today' | 'urgent' | 'normal' | 'unknown'
   requiredDocuments: ApiRequiredDocument[]
   evidenceId: string
   status: 'pending'
