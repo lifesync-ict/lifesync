@@ -40,7 +40,11 @@ def contains(text: str, group: str) -> bool:
 
 
 def extract_date(text: str) -> date | None:
-    match = re.search(r"(20\d{2})\s*[년./-]\s*(0?[1-9]|1[0-2])\s*[월./-]\s*(0?[1-9]|[12]\d|3[01])", text)
+    match = re.search(
+        r"(?<!\d)(20\d{2})\s*(?:년|[./-])\s*(1[0-2]|0?[1-9])"
+        r"\s*(?:월|[./-])\s*(3[01]|[12]\d|0?[1-9])\s*(?:일)?(?!\d)",
+        text,
+    )
     if not match:
         return None
     try:

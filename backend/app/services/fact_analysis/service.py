@@ -7,8 +7,9 @@ from app.schemas.facts import (
     Actor, AnalyzeFactsRequest, AnalyzeFactsResponse, ClarificationQuestion, ConfirmFactsRequest,
     ConfirmFactsResponse, ConfirmedFacts, EventCandidate, EventType,
 )
-from app.services.fact_analysis.base import FactAnalysisProvider
+from app.services.fact_analysis.base import FactAnalysisProvider, FactAnalysisProviderError
 from app.services.fact_analysis.deterministic import DeterministicFactAnalysisProvider
+from app.services.fact_analysis.factory import create_fact_analysis_provider
 
 
 QUESTION_DEFINITIONS = {
@@ -21,18 +22,24 @@ QUESTION_DEFINITIONS = {
 
 
 class FactAnalysisService:
-    def __init__(self, provider: FactAnalysisProvider | None = None):
-        self.provider = provider or DeterministicFactAnalysisProvider()
+    def __init__(self, provider: FactAnalysisProvider | None = None, fallback_provider: FactAnalysisProvider | None = None):
+        self.provider = provider or create_fact_analysis_provider()
+        self.fallback_provider = fallback_provider or DeterministicFactAnalysisProvider()
 
     async def analyze(self, request: AnalyzeFactsRequest) -> AnalyzeFactsResponse:
-        candidate = await self.provider.analyze(request.text, request.language, request.profile)
+        warnings: list[str] = []
+        try:
+            candidate = await self.provider.analyze(request.text, request.language, request.profile)
+        except FactAnalysisProviderError as exc:
+            candidate = await self.fallback_provider.analyze(request.text, request.language, request.profile)
+            warnings.append(exc.code)
+            warnings.append("deterministic_fallback_used")
         questions = [self._question(key) for key in candidate.missing_facts]
         if candidate.event_type == EventType.UNKNOWN:
             status = "review_required"
-            warnings = ["insufficient_event_information"]
+            warnings.append("insufficient_event_information")
         else:
             status = "needs_input" if questions else "ready_to_confirm"
-            warnings = []
         return AnalyzeFactsResponse(status=status, event_candidate=candidate, questions=questions, warnings=warnings, meta=ApiMeta())
 
     @staticmethod

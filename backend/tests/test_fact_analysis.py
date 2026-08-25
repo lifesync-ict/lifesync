@@ -1,5 +1,7 @@
 import pytest
 
+from app.services.fact_analysis.deterministic import extract_date
+
 
 def analyze(client, profile, text):
     return client.post("/api/v1/facts/analyze", json={"text": text, "language": "ko", "profile": profile})
@@ -41,6 +43,17 @@ def test_document_status_is_distinguished(client, profile, text, expected):
 def test_negative_workplace_change_wins_over_positive_fragment(client, profile):
     body = analyze(client, profile, "계약이 끝났지만 회사를 바꾸고 싶지 않아요").json()
     assert body["eventCandidate"]["wantsWorkplaceChange"] is False
+
+
+@pytest.mark.parametrize(("text", "expected"), [
+    ("2026년 8월 20일에 발생했어요", "2026-08-20"),
+    ("2026년 08월 20일에 발생했어요", "2026-08-20"),
+    ("2026-8-20 발생", "2026-08-20"),
+])
+def test_deterministic_date_parser_does_not_truncate_day(text, expected):
+    parsed = extract_date(text)
+    assert parsed is not None
+    assert parsed.isoformat() == expected
 
 
 def test_confirm_requires_user_confirmation(client):

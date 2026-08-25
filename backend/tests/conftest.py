@@ -1,12 +1,35 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.core.config import Settings
+from app.main import create_app
+from app.services.fact_analysis.deterministic import DeterministicFactAnalysisProvider
+from app.services.fact_analysis.service import fact_analysis_service
+
+
+@pytest.fixture(autouse=True)
+def disable_external_ai(monkeypatch):
+    deterministic = DeterministicFactAnalysisProvider()
+    monkeypatch.setattr(fact_analysis_service, "provider", deterministic)
+    monkeypatch.setattr(fact_analysis_service, "fallback_provider", deterministic)
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app, raise_server_exceptions=False)
+def cors_origin() -> str:
+    return "http://localhost:5174"
+
+
+@pytest.fixture
+def client(cors_origin: str):
+    settings = Settings(
+        _env_file=None,
+        ai_provider="deterministic",
+        ai_api_key="",
+        ai_model="",
+        cors_origins=cors_origin,
+    )
+    with TestClient(create_app(settings), raise_server_exceptions=False) as test_client:
+        yield test_client
 
 
 @pytest.fixture

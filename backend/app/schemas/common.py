@@ -39,3 +39,8 @@ class HealthResponse(ApiModel):
     status: str
     service: str
     version: str
+
+
+class ReadyResponse(HealthResponse):
+    provider: str
+    provider_configured: bool
