@@ -7,6 +7,7 @@ const DERIVED_KEYS = [
   'lifesync-fact-question-editing',
   'lifesync-confirmed-facts',
   'lifesync-action-guidance',
+  'lifesync-action-guidance-api',
   'lifesync-completed-actions',
   'lifesync-handoff-result',
   'lifesync-handoff-included',
@@ -15,6 +16,7 @@ const DERIVED_KEYS = [
 const AFTER_FACT_CHANGE_KEYS = [
   'lifesync-confirmed-facts',
   'lifesync-action-guidance',
+  'lifesync-action-guidance-api',
   'lifesync-completed-actions',
   'lifesync-handoff-result',
   'lifesync-handoff-included',

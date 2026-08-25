@@ -1,6 +1,6 @@
 export type AnalysisStatus = 'analyzing' | 'needs_input' | 'ready_to_confirm' | 'confirmed' | 'review_required' | 'error'
 
-export type FactKey = 'eventType' | 'occurredAt' | 'documentsProvided' | 'wantsWorkplaceChange'
+export type FactKey = 'eventType' | 'occurredAt' | 'actor' | 'documentsProvided' | 'wantsWorkplaceChange'
 
 export type EventCandidate = {
   eventType: 'contract_ended' | 'dismissed' | 'other' | null
@@ -38,6 +38,7 @@ export type ConfirmedFacts = {
 }
 
 export type AnalysisResult = {
+  origin?: 'api'
   status: Exclude<AnalysisStatus, 'analyzing' | 'confirmed'>
   candidate: EventCandidate
   questions: ClarificationQuestion[]

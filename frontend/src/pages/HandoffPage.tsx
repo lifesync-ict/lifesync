@@ -5,10 +5,11 @@ import { AppHeader } from '../components/AppHeader'
 import { ProgressPath } from '../components/ProgressPath'
 import { StatusSection } from '../components/StatusSection'
 import { translations, type LanguageCode } from '../data/translations'
+import { apiClient } from '../api/client'
+import { confirmedToApi, handoffFromApi, profileToApi } from '../api/adapters'
 import { actionStorage } from '../features/action-guidance/storage'
 import { actionTranslations } from '../features/action-guidance/translations'
 import { buildHandoffBundle, downloadJson, summaryText } from '../features/institution-handoff/bundleUtils'
-import { prepareHandoff } from '../features/institution-handoff/mockHandoffService'
 import { clearLifeSyncSession, handoffStorage } from '../features/institution-handoff/storage'
 import { handoffTranslations } from '../features/institution-handoff/translations'
 import type { HandoffResult, HandoffStatus } from '../features/institution-handoff/types'
@@ -18,23 +19,31 @@ import { demoProfile } from '../types/profile'
 type Props = { language: LanguageCode; onLanguageChange: (language: LanguageCode) => void }
 export function HandoffPage({ language, onLanguageChange }: Props) {
   const navigate = useNavigate(); const [facts] = useState(factStorage.getConfirmed); const [actions] = useState(actionStorage.getResult)
+  const [apiActions] = useState(actionStorage.getApiResult)
   const [status, setStatus] = useState<HandoffStatus>('preparing'); const [result, setResult] = useState<HandoffResult | null>(handoffStorage.getResult)
   const [included, setIncluded] = useState<Record<string, boolean>>(handoffStorage.getIncluded); const [message, setMessage] = useState(''); const [dialogOpen, setDialogOpen] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null); const content = translations[language]; const copy = handoffTranslations[language]; const actionCopy = actionTranslations[language]
 
   useEffect(() => {
-    if (!facts || !actions?.obligations.length) return
-    let active = true
-    prepareHandoff(facts, actions, demoProfile, actionStorage.getCompleted()).then((next) => { if (active) { setResult(next); setStatus(next.status); handoffStorage.saveResult(next); const saved = handoffStorage.getIncluded(); const defaults = Object.fromEntries(next.evidenceBundle.map((item) => [item.id, saved[item.id] ?? item.included])); setIncluded(defaults); handoffStorage.saveIncluded(defaults) } }).catch(() => { if (active) setStatus('error') })
-    return () => { active = false }
-  }, [facts, actions])
+    if (!facts || !actions?.obligations.length || !apiActions) return
+    const controller = new AbortController()
+    const saved = handoffStorage.getIncluded()
+    void (async () => {
+      try {
+        const response = await apiClient.prepareHandoff({ confirmedFacts: confirmedToApi(facts), profile: profileToApi(demoProfile), actionGuidance: apiActions, completedActionIds: actionStorage.getCompleted(), selectedEvidenceItemIds: Object.entries(saved).filter(([, selected]) => selected).map(([id]) => id) }, controller.signal)
+        const next = handoffFromApi(response, facts, actions, actionStorage.getCompleted())
+        setResult(next); setStatus(next.status); handoffStorage.saveResult(next); const defaults = Object.fromEntries(next.evidenceBundle.map((item) => [item.id, saved[item.id] ?? item.included])); setIncluded(defaults); handoffStorage.saveIncluded(defaults)
+      } catch { if (!controller.signal.aborted) setStatus('error') }
+    })()
+    return () => controller.abort()
+  }, [facts, actions, apiActions])
 
   useEffect(() => { if (!dialogOpen) return; dialogRef.current?.focus(); const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setDialogOpen(false) }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close) }, [dialogOpen])
 
   if (!facts) return <Navigate to="/confirm" replace />
-  if (!actions?.obligations.length) return <Navigate to="/actions" replace />
+  if (!actions?.obligations.length || !apiActions) return <Navigate to="/actions" replace />
 
-  const retry = async () => { setStatus('preparing'); try { const next = await prepareHandoff(facts, actions, demoProfile, actionStorage.getCompleted()); setResult(next); setStatus(next.status); handoffStorage.saveResult(next) } catch { setStatus('error') } }
+  const retry = async () => { setStatus('preparing'); try { const response = await apiClient.prepareHandoff({ confirmedFacts: confirmedToApi(facts), profile: profileToApi(demoProfile), actionGuidance: apiActions, completedActionIds: actionStorage.getCompleted(), selectedEvidenceItemIds: Object.entries(included).filter(([, selected]) => selected).map(([id]) => id) }); const next = handoffFromApi(response, facts, actions, actionStorage.getCompleted()); setResult(next); setStatus(next.status); handoffStorage.saveResult(next) } catch { setStatus('error') } }
   const toggle = (id: string) => { const next = { ...included, [id]: !(included[id] ?? true) }; setIncluded(next); handoffStorage.saveIncluded(next) }
   const itemTitle = (key: string) => copy.items[key] ?? actionCopy.obligationText[key] ?? actionCopy.documentText[key] ?? copy.questions[key] ?? key
   const itemDescription = (key: string) => copy.items[key] ?? key

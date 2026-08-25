@@ -5,8 +5,9 @@ import { AppHeader } from '../components/AppHeader'
 import { ProgressPath } from '../components/ProgressPath'
 import { StatusSection } from '../components/StatusSection'
 import { translations, type LanguageCode } from '../data/translations'
+import { apiClient } from '../api/client'
+import { actionsFromApi, confirmedToApi, profileToApi } from '../api/adapters'
 import { formatDate } from '../features/action-guidance/dateUtils'
-import { evaluateActionGuidance } from '../features/action-guidance/mockRuleEngine'
 import { actionStorage } from '../features/action-guidance/storage'
 import { actionTranslations } from '../features/action-guidance/translations'
 import { actionReviewGuidance } from '../features/action-guidance/reviewGuidance'
@@ -29,15 +30,20 @@ export function ActionsPage({ language, onLanguageChange }: Props) {
 
   useEffect(() => {
     if (!facts) return
-    let active = true
-    evaluateActionGuidance(facts, demoProfile).then((next) => { if (active) { setResult(next); setStatus(next.evaluationStatus); actionStorage.saveResult(next) } }).catch(() => { if (active) setStatus('error') })
-    return () => { active = false }
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const response = await apiClient.evaluateActions({ confirmedFacts: confirmedToApi(facts), profile: profileToApi(demoProfile) }, controller.signal)
+        const next = actionsFromApi(response); actionStorage.saveApiResult(response); setResult(next); setStatus(next.evaluationStatus); actionStorage.saveResult(next)
+      } catch { if (!controller.signal.aborted) setStatus('error') }
+    })()
+    return () => controller.abort()
   }, [facts])
 
   const visible = useMemo(() => result?.obligations.filter((item) => filter === 'all' || item.party === filter) ?? [], [result, filter])
   if (!facts) return <Navigate to="/confirm" replace />
 
-  const retry = async () => { setStatus('evaluating'); try { const next = await evaluateActionGuidance(facts, demoProfile); setResult(next); setStatus(next.evaluationStatus); actionStorage.saveResult(next) } catch { setStatus('error') } }
+  const retry = async () => { setStatus('evaluating'); try { const response = await apiClient.evaluateActions({ confirmedFacts: confirmedToApi(facts), profile: profileToApi(demoProfile) }); const next = actionsFromApi(response); actionStorage.saveApiResult(response); setResult(next); setStatus(next.evaluationStatus); actionStorage.saveResult(next) } catch { setStatus('error') } }
   const toggleComplete = (id: string) => { const next = completed.includes(id) ? completed.filter((item) => item !== id) : [...completed, id]; setCompleted(next); actionStorage.saveCompleted(next) }
   const summary = [
     [copy.profileLabels.eventType, facts.eventType ? factCopy.values[facts.eventType] : factCopy.notConfirmed],

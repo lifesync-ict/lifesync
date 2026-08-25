@@ -11,7 +11,10 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 export const factStorage = {
-  getAnalysis: () => readJson<AnalysisResult | null>(ANALYSIS_KEY, null),
+  getAnalysis: () => {
+    const analysis = readJson<AnalysisResult | null>(ANALYSIS_KEY, null)
+    return analysis?.origin === 'api' ? analysis : null
+  },
   saveAnalysis: (analysis: AnalysisResult) => sessionStorage.setItem(ANALYSIS_KEY, JSON.stringify(analysis)),
   getAnswers: () => readJson<FactAnswers>(ANSWERS_KEY, {}),
   saveAnswers: (answers: FactAnswers) => sessionStorage.setItem(ANSWERS_KEY, JSON.stringify(answers)),

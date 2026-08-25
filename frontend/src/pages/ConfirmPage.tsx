@@ -5,13 +5,15 @@ import { AppHeader } from '../components/AppHeader'
 import { ProgressPath } from '../components/ProgressPath'
 import { StatusSection } from '../components/StatusSection'
 import { translations, type LanguageCode } from '../data/translations'
-import { analyzeSituation, buildConfirmedFacts } from '../features/fact-confirmation/mockFactAnalysis'
+import { apiClient } from '../api/client'
+import { analysisFromApi, buildDraftFacts, confirmationToApi, confirmedFromApi, profileToApi } from '../api/adapters'
 import { formatFactValue } from '../features/fact-confirmation/formatters'
 import { factStorage } from '../features/fact-confirmation/storage'
 import { factTranslations } from '../features/fact-confirmation/translations'
 import type { AnalysisResult, AnalysisStatus, FactAnswers, FactKey } from '../features/fact-confirmation/types'
 import { SITUATION_KEY } from './SituationPage'
 import { invalidateAfterFactChange, normalizeSourceText, prepareSourceSession } from '../features/sessionLifecycle'
+import { demoProfile } from '../types/profile'
 
 type Props = { language: LanguageCode; onLanguageChange: (language: LanguageCode) => void }
 
@@ -34,17 +36,18 @@ export function ConfirmPage({ language, onLanguageChange }: Props) {
 
   useEffect(() => {
     if (!sourceText || result) return
-    let active = true
-    analyzeSituation(sourceText)
-      .then((analysis) => { if (active) { factStorage.saveAnalysis(analysis); setResult(analysis); setStatus(analysis.status) } })
-      .catch(() => { if (active) setStatus('error') })
-    return () => { active = false }
-  }, [sourceText, result])
+    const controller = new AbortController()
+    apiClient.analyzeFacts({ text: sourceText, language, profile: profileToApi(demoProfile) }, controller.signal)
+      .then(analysisFromApi)
+      .then((analysis) => { factStorage.saveAnalysis(analysis); setResult(analysis); setStatus(analysis.status) })
+      .catch(() => { if (!controller.signal.aborted) setStatus('error') })
+    return () => controller.abort()
+  }, [sourceText, result, language])
 
   const retryAnalysis = async () => {
     if (!sourceText) return
     setStatus('analyzing'); setShowError(false)
-    try { const analysis = await analyzeSituation(sourceText); factStorage.saveAnalysis(analysis); setResult(analysis); setStatus(analysis.status) }
+    try { const analysis = analysisFromApi(await apiClient.analyzeFacts({ text: sourceText, language, profile: profileToApi(demoProfile) })); factStorage.saveAnalysis(analysis); setResult(analysis); setStatus(analysis.status) }
     catch { setStatus('error') }
   }
 
@@ -52,7 +55,7 @@ export function ConfirmPage({ language, onLanguageChange }: Props) {
   const safeIndex = Math.min(questionIndex, Math.max(questions.length - 1, 0))
   const currentQuestion = questions[safeIndex]
   const allRequiredAnswered = questions.every((question) => !question.required || Boolean(answers[question.id]))
-  const facts = useMemo(() => result ? buildConfirmedFacts(result.candidate, answers) : null, [result, answers])
+  const facts = useMemo(() => result ? buildDraftFacts(result.candidate, result.questions, answers) : null, [result, answers])
 
   if (!sourceText) return <Navigate to="/situation" replace />
 
@@ -64,9 +67,12 @@ export function ConfirmPage({ language, onLanguageChange }: Props) {
     if (direction > 0 && safeIndex === questions.length - 1) { setIsEditingQuestions(false); factStorage.saveQuestionEditing(false); return }
     const next = Math.max(0, Math.min(safeIndex + direction, questions.length - 1)); setQuestionIndex(next); factStorage.saveQuestionIndex(next)
   }
-  const confirmFacts = () => {
+  const confirmFacts = async () => {
     if (!facts || !allRequiredAnswered) { setShowError(true); return }
-    factStorage.saveConfirmed(facts); factStorage.saveQuestionEditing(false); setStatus('confirmed'); navigate('/actions')
+    try {
+      const response = await apiClient.confirmFacts(confirmationToApi(result!.candidate, questions, answers))
+      factStorage.saveConfirmed(confirmedFromApi(response)); factStorage.saveQuestionEditing(false); setStatus('confirmed'); navigate('/actions')
+    } catch { setStatus('error') }
   }
   const factValue = (key: FactKey | 'actor') => {
     if (!facts) return copy.notConfirmed
