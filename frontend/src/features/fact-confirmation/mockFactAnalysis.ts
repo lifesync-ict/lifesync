@@ -15,7 +15,8 @@ export async function analyzeSituation(sourceText: string): Promise<AnalysisResu
 
   const dismissed = contains(sourceText, ['그만 나오', '해고', '나오지 마', 'not to come back', 'fired', 'không cần đi làm', 'अब काममा नआउन'])
   const contractEnded = contains(sourceText, ['계약이 끝', '계약 만료', 'contract ended', 'hợp đồng đã hết', 'सम्झौता सकियो'])
-  const wantsChange = contains(sourceText, ['옮기고 싶', '사업장 변경', 'another company', 'chuyển sang công ty', 'अर्को कम्पनी'])
+  const rejectsChange = contains(sourceText, ['옮기고 싶지 않', '변경하지 않을', '바꾸고 싶지 않', '계속 있고 싶', 'do not want to move', "don't want to move", 'không muốn chuyển', 'परिवर्तन गर्न चाहन्न'])
+  const wantsChange = contains(sourceText, ['다른 회사로 옮기고 싶', '사업장을 변경하고 싶', '회사를 바꾸고 싶', '다른 곳에서 일하고 싶', 'another company', 'chuyển sang công ty', 'अर्को कम्पनी'])
   const documentsDenied = contains(sourceText, ['서류를 주지', 'documents i need', 'không đưa', 'कागजात दिइरहेका छैनन्'])
   const dateMatch = sourceText.match(/(20\d{2})[-./년\s](0?[1-9]|1[0-2])[-./월\s](0?[1-9]|[12]\d|3[01])/)
 
@@ -24,7 +25,7 @@ export async function analyzeSituation(sourceText: string): Promise<AnalysisResu
     occurredAt: dateMatch ? `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}` : null,
     actor: dismissed ? 'employer' : contractEnded ? 'mutual' : null,
     reasonCode: dismissed ? 'employer_request' : contractEnded ? 'contract_end' : 'unknown',
-    wantsWorkplaceChange: wantsChange ? true : null,
+    wantsWorkplaceChange: rejectsChange ? false : wantsChange ? true : null,
     documentsProvided: documentsDenied ? false : null,
     confidence: dismissed || contractEnded ? 0.82 : 0.38,
     sourceText,
@@ -37,14 +38,15 @@ export async function analyzeSituation(sourceText: string): Promise<AnalysisResu
 }
 
 export function buildConfirmedFacts(candidate: EventCandidate, answers: Record<string, string>) {
-  const eventType = (answers.eventType as EventCandidate['eventType']) ?? candidate.eventType
+  const answerFor = (key: FactKey) => candidate.missingFacts.includes(key) ? answers[key] : undefined
+  const eventType = (answerFor('eventType') as EventCandidate['eventType']) ?? candidate.eventType
   return {
     eventType,
-    occurredAt: answers.occurredAt || candidate.occurredAt,
+    occurredAt: answerFor('occurredAt') || candidate.occurredAt,
     actor: eventType === 'dismissed' ? 'employer' as const : candidate.actor,
     reasonCode: eventType === 'dismissed' ? 'employer_request' as const : eventType === 'contract_ended' ? 'contract_end' as const : candidate.reasonCode,
-    wantsWorkplaceChange: answers.wantsWorkplaceChange ? answers.wantsWorkplaceChange === 'yes' : candidate.wantsWorkplaceChange,
-    documentsProvided: answers.documentsProvided ? answers.documentsProvided === 'yes' : candidate.documentsProvided,
+    wantsWorkplaceChange: answerFor('wantsWorkplaceChange') ? answerFor('wantsWorkplaceChange') === 'yes' : candidate.wantsWorkplaceChange,
+    documentsProvided: answerFor('documentsProvided') ? answerFor('documentsProvided') === 'yes' : candidate.documentsProvided,
     sourceText: candidate.sourceText,
     confirmedAt: new Date().toISOString(),
   }

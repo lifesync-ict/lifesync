@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { ProgressPath } from '../components/ProgressPath'
+import { StatusSection } from '../components/StatusSection'
 import { translations, type LanguageCode } from '../data/translations'
 import { formatDate } from '../features/action-guidance/dateUtils'
 import { evaluateActionGuidance } from '../features/action-guidance/mockRuleEngine'
 import { actionStorage } from '../features/action-guidance/storage'
 import { actionTranslations } from '../features/action-guidance/translations'
+import { actionReviewGuidance } from '../features/action-guidance/reviewGuidance'
 import type { ActionGuidanceResult, ResponsibleParty, RuleEvaluationStatus } from '../features/action-guidance/types'
 import { factStorage } from '../features/fact-confirmation/storage'
 import { factTranslations } from '../features/fact-confirmation/translations'
@@ -19,6 +21,7 @@ const localeMap: Record<LanguageCode, string> = { ko: 'ko-KR', en: 'en-US', vi: 
 export function ActionsPage({ language, onLanguageChange }: Props) {
   const navigate = useNavigate(); const [facts] = useState(factStorage.getConfirmed); const content = translations[language]
   const copy = actionTranslations[language]; const factCopy = factTranslations[language]
+  const reviewGuidance = actionReviewGuidance[language]
   const [status, setStatus] = useState<RuleEvaluationStatus>('evaluating')
   const [result, setResult] = useState<ActionGuidanceResult | null>(actionStorage.getResult)
   const [filter, setFilter] = useState<'all' | ResponsibleParty>('all')
@@ -42,15 +45,16 @@ export function ActionsPage({ language, onLanguageChange }: Props) {
     [copy.profileLabels.visa, demoProfile.visa], [copy.profileLabels.region, content.profile.regionValue],
     [copy.profileLabels.industry, content.profile.industryValue], [copy.profileLabels.wantsChange, facts.wantsWorkplaceChange ? factCopy.values.true : factCopy.values.false],
   ]
+  const pageTitle = status === 'evaluating' ? copy.loading : status === 'error' ? copy.errorTitle : status === 'needs_review' ? copy.reviewTitle : copy.title
 
   return <main className="flow-shell" lang={language}><AppHeader language={language} onLanguageChange={onLanguageChange} /><div className="flow-progress"><ProgressPath steps={content.progress} label={content.progressLabel} currentStep={2} /></div>
     <section className="guidance-layout" aria-live="polite">
-      {status === 'evaluating' && <div className="state-panel"><LoaderCircle className="loading-icon" aria-hidden="true" /><h1>{copy.loading}</h1></div>}
-      {status === 'error' && <div className="state-panel"><AlertTriangle aria-hidden="true" /><h1>{copy.errorTitle}</h1><p>{copy.errorMessage}</p><button className="next-button" type="button" onClick={() => void retry()}><RefreshCw size={17} aria-hidden="true" />{copy.retry}</button></div>}
-      {status === 'needs_review' && <div className="state-panel"><AlertTriangle aria-hidden="true" /><h1>{copy.reviewTitle}</h1><p>{copy.reviewMessage}</p>{result?.warnings.map((warning) => <p className="actions-notice" key={warning}>{copy.warnings[warning]}</p>)}<button className="back-button" type="button" onClick={() => navigate('/confirm')}><ArrowLeft size={17} aria-hidden="true" />{copy.backToFacts}</button></div>}
+      <header className="guidance-heading"><h1>{pageTitle}</h1><p>{status === 'error' ? copy.errorMessage : status === 'needs_review' ? copy.reviewMessage : copy.intro}</p>{status === 'complete' && <p className="demo-rule-notice">{copy.demoWarning}</p>}</header>
+      <section className="guidance-summary" aria-labelledby="guidance-summary-title"><h2 id="guidance-summary-title">{copy.summaryTitle}</h2><dl>{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>
+      {status === 'evaluating' && <StatusSection icon={<LoaderCircle className="loading-icon" />} title={copy.loading} description={copy.intro} />}
+      {status === 'error' && <StatusSection icon={<AlertTriangle />} tone="error" title={copy.errorTitle} description={copy.errorMessage} actions={<><button className="next-button" type="button" onClick={() => void retry()}><RefreshCw size={17} aria-hidden="true" />{copy.retry}</button><button className="back-button" type="button" onClick={() => navigate('/confirm')}><ArrowLeft size={17} aria-hidden="true" />{copy.backToFacts}</button></>} />}
+      {status === 'needs_review' && <StatusSection icon={<AlertTriangle />} tone="warning" title={copy.reviewTitle} description={copy.reviewMessage} detail={<><p className="review-scenario-guidance">{reviewGuidance.message}</p>{result?.warnings.map((warning) => <p key={warning}>{copy.warnings[warning]}</p>)}</>} actions={<><button className="back-button" type="button" onClick={() => navigate('/confirm')}><ArrowLeft size={17} aria-hidden="true" />{reviewGuidance.editFacts}</button><button className="next-button" type="button" onClick={() => void retry()}><RefreshCw size={17} aria-hidden="true" />{copy.retry}</button></>} />}
       {status === 'complete' && result && <>
-        <header className="guidance-heading"><p className="step-kicker">03 / 04 · {content.progress[2]}</p><h1>{copy.title}</h1><p>{copy.intro}</p><p className="demo-rule-notice">{copy.demoWarning}</p></header>
-        <section className="guidance-summary" aria-labelledby="guidance-summary-title"><h2 id="guidance-summary-title">{copy.summaryTitle}</h2><dl>{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>
         <div className="party-filters" role="group" aria-label={copy.filters.all}>{(['all', 'worker', 'employer', 'institution'] as const).map((key) => <button type="button" className={filter === key ? 'active' : ''} aria-pressed={filter === key} onClick={() => setFilter(key)} key={key}>{copy.filters[key]}</button>)}</div>
         <section className="obligation-list">{visible.length === 0 ? <p className="empty-state">{copy.empty}</p> : visible.map((item) => {
           const evidence = result.evidence.find((entry) => entry.id === item.evidenceId); const done = completed.includes(item.id)

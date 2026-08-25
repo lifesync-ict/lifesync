@@ -5,6 +5,7 @@ import { AppHeader } from '../components/AppHeader'
 import { ProgressPath } from '../components/ProgressPath'
 import { translations, type LanguageCode } from '../data/translations'
 import { demoProfile } from '../types/profile'
+import { prepareSourceSession } from '../features/sessionLifecycle'
 
 export const SITUATION_KEY = 'lifesync-situation'
 const MAX_LENGTH = 1000
@@ -15,7 +16,7 @@ export function SituationPage({ language, onLanguageChange }: Props) {
   const [value, setValue] = useState(() => sessionStorage.getItem(SITUATION_KEY) ?? '')
   const [touched, setTouched] = useState(false); const isValid = value.trim().length > 0
   const updateValue = (next: string) => { setValue(next); sessionStorage.setItem(SITUATION_KEY, next) }
-  const submit = () => { setTouched(true); if (!isValid) return; sessionStorage.setItem(SITUATION_KEY, value); navigate('/confirm') }
+  const submit = () => { setTouched(true); if (!isValid) return; const source = prepareSourceSession(value); sessionStorage.setItem(SITUATION_KEY, source); setValue(source); navigate('/confirm') }
   const profileValues = [demoProfile.visa, content.profile.nationalityValue, content.profile.regionValue, content.profile.industryValue, content.profile.workplaceValue]
   const profileLabels = [content.profile.visa, content.profile.nationality, content.profile.region, content.profile.industry, content.profile.workplace]
 
@@ -23,7 +24,7 @@ export function SituationPage({ language, onLanguageChange }: Props) {
     <AppHeader language={language} onLanguageChange={onLanguageChange} />
     <div className="flow-progress"><ProgressPath steps={content.progress} label={content.progressLabel} currentStep={0} /></div>
     <section className="situation-layout">
-      <div className="situation-intro"><p className="step-kicker">01 / 04 · {content.progress[0]}</p><h1>{content.situation.title}</h1><p>{content.situation.description}</p></div>
+      <div className="situation-intro"><h1>{content.situation.title}</h1><p>{content.situation.description}</p></div>
       <div className="demo-profile" aria-label={content.profile.demoLabel}><span className="demo-label"><Info size={14} aria-hidden="true" />{content.profile.demoLabel}</span><dl>{profileLabels.map((label, index) => <div key={label}><dt>{label}</dt><dd>{profileValues[index]}</dd></div>)}</dl></div>
       <form className="situation-form" onSubmit={(event) => { event.preventDefault(); submit() }}>
         <label htmlFor="situation-input">{content.situation.inputLabel}</label>
