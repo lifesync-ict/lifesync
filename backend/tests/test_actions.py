@@ -1,4 +1,4 @@
-def test_supported_scenario_returns_review_rules_without_deadlines(client, profile, confirmed_facts):
+def test_supported_scenario_uses_verified_sources_without_unverified_deadlines(client, profile, confirmed_facts):
     response = client.post("/api/v1/actions/evaluate", json={"confirmedFacts": confirmed_facts, "profile": profile})
     assert response.status_code == 200
     body = response.json()
@@ -9,8 +9,13 @@ def test_supported_scenario_returns_review_rules_without_deadlines(client, profi
         assert item["daysRemaining"] is None
         assert item["urgency"] == "unknown"
         assert item["deadlineLabelKey"] == "official_deadline_check_required"
-    assert all(item["verificationStatus"] == "review_required" for item in body["evidence"])
-    assert all(item["sourceUrl"] is None for item in body["evidence"])
+    verified = [item for item in body["evidence"] if item["verificationStatus"] == "verified"]
+    review = [item for item in body["evidence"] if item["verificationStatus"] == "review_required"]
+    assert len(verified) == 2
+    assert all(item["sourceUrl"].startswith("https://") for item in verified)
+    assert all(item["checkedAt"] == "2026-08-25" for item in verified)
+    assert len(review) == 1
+    assert review[0]["sourceUrl"] is None
 
 
 def test_unsupported_scenario_requires_review(client, profile, confirmed_facts):

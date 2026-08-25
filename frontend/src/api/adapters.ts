@@ -180,6 +180,7 @@ const documentKeys: Record<string, [string, string]> = {
 const warningKeys: Record<string, string> = {
   expert_review_required: 'reviewRequired', demo_rules_require_official_verification: 'demoRuleWarning',
   official_check_required: 'officialCheckRequired', event_date_required: 'dateRequired',
+  official_sources_do_not_determine_individual_eligibility: 'officialCheckRequired',
 }
 
 const documentFromApi = (document: ApiObligationItem['requiredDocuments'][number]): RequiredDocument => {
@@ -189,7 +190,7 @@ const documentFromApi = (document: ApiObligationItem['requiredDocuments'][number
 const evidenceFromApi = (evidence: ApiRuleEvidence, generatedAt: string): RuleEvidence => ({
   id: evidence.id.includes('immigration') ? 'immigration' : evidence.id.includes('moel') ? 'moel' : evidence.id.includes('eps') ? 'eps' : evidence.id,
   ruleName: evidence.ruleNameKey, issuingAgency: evidence.issuingAgencyKey, sourceTitle: evidence.sourceTitleKey,
-  sourceUrl: evidence.sourceUrl ?? null, effectiveFrom: null, checkedAt: evidence.checkedAt ?? generatedAt.slice(0, 10),
+  sourceUrl: evidence.sourceUrl ?? null, effectiveFrom: evidence.effectiveFrom ?? null, checkedAt: evidence.checkedAt ?? generatedAt.slice(0, 10),
   verificationStatus: evidence.verificationStatus === 'verified' ? 'verified' : 'review_required', applicabilityNote: evidence.applicabilityNoteKey,
 })
 const obligationFromApi = (item: ApiObligationItem): ObligationItem => {
@@ -202,7 +203,7 @@ const obligationFromApi = (item: ApiObligationItem): ObligationItem => {
   const evidenceId = item.evidenceId.includes('immigration') ? 'immigration' : item.evidenceId.includes('moel') ? 'moel' : item.evidenceId.includes('eps') ? 'eps' : item.evidenceId
   return {
     id: item.id, party: item.party, title: mapped?.[0] ?? defaultText[0], description: mapped?.[1] ?? defaultText[1],
-    deadline: null, deadlineLabel: item.deadlineLabelKey, daysRemaining: null, urgency: 'unknown',
+    deadline: item.deadline ?? null, deadlineLabel: item.deadlineLabelKey, daysRemaining: item.daysRemaining ?? null, urgency: item.urgency,
     requiredDocuments: item.requiredDocuments.map(documentFromApi), evidenceId, status: item.status,
   }
 }

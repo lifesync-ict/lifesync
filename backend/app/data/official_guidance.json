@@ -1,0 +1,53 @@
+[
+  {
+    "id": "foreign-workers-act-article-25",
+    "title": "외국인근로자의 고용 등에 관한 법률 제25조(사업 또는 사업장 변경의 허용)",
+    "issuingAuthority": "국가법령정보센터",
+    "sourceUrl": "https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1028131559",
+    "sourceType": "statute",
+    "effectiveFrom": "2025-10-01",
+    "effectiveTo": null,
+    "retrievedAt": "2026-08-25",
+    "lastVerifiedAt": "2026-08-25",
+    "verificationStatus": "verified",
+    "applicableConditions": ["E-9", "employer_termination_request", "wants_workplace_change"],
+    "deadlineRule": {"anchorFact": "employment_contract_ended_at", "calendarMonths": 1, "calendarDays": null, "labelKey": "workplace_change_application_deadline"},
+    "requiredDocuments": [],
+    "institutionIds": ["employment-center-type"],
+    "notes": ["사업주의 근로계약 해지 요구는 신청 가능 사유 후보이나 최종 적용 여부는 직업안정기관 확인이 필요함", "기산점은 근로계약 종료일이며 현재 occurredAt과 동일하다고 추정하지 않음"]
+  },
+  {
+    "id": "foreign-workers-enforcement-rule-article-16",
+    "title": "외국인근로자의 고용 등에 관한 법률 시행규칙 제16조(사업 또는 사업장의 변경)",
+    "issuingAuthority": "국가법령정보센터",
+    "sourceUrl": "https://www.law.go.kr/LSW/lsInfoP.do?chrClsCd=010202&lsId=&lsiSeq=258621&urlMode=lsInfoP",
+    "sourceType": "enforcement_rule",
+    "effectiveFrom": null,
+    "effectiveTo": null,
+    "retrievedAt": "2026-08-25",
+    "lastVerifiedAt": "2026-08-25",
+    "verificationStatus": "verified",
+    "applicableConditions": ["workplace_change_application"],
+    "deadlineRule": null,
+    "requiredDocuments": ["사업장 변경신청서", "외국인등록 사실을 확인할 수 없는 경우에 한한 여권 사본", "직업안정기관이 변경 사유 확인을 위해 요구하는 관련 자료"],
+    "institutionIds": ["employment-center-type"],
+    "notes": ["개별 사건에서 요구되는 관련 자료의 범위는 공식 기관 확인 필요"]
+  },
+  {
+    "id": "eps-workplace-change-service",
+    "title": "고용허가제 일반외국인서비스(E-9) 사업장변경신청 안내",
+    "issuingAuthority": "고용노동부 고용허가제",
+    "sourceUrl": "https://www.eps.go.kr/eo/main.eo?langCD=kr",
+    "sourceType": "official_service",
+    "effectiveFrom": null,
+    "effectiveTo": null,
+    "retrievedAt": "2026-08-25",
+    "lastVerifiedAt": "2026-08-25",
+    "verificationStatus": "verified",
+    "applicableConditions": ["E-9", "workplace_change_application_service"],
+    "deadlineRule": null,
+    "requiredDocuments": [],
+    "institutionIds": ["employment-center-type"],
+    "notes": ["온라인 신청 메뉴 존재만 확인됨", "로그인 이후 신청 가능 여부와 개별 구비서류는 별도 확인 필요"]
+  }
+]

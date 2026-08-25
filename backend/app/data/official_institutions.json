@@ -1,0 +1,5 @@
+[
+  {"id":"employment-center-type","officialName":null,"institutionType":"employment_center","jurisdiction":null,"supportedTasks":["employment_permission_and_workplace_change_check"],"address":null,"phone":null,"officialUrl":null,"sourceUrl":null,"lastVerifiedAt":null,"verificationStatus":"review_required"},
+  {"id":"immigration-office-type","officialName":null,"institutionType":"immigration_office","jurisdiction":null,"supportedTasks":["visa_status_and_immigration_process_check"],"address":null,"phone":null,"officialUrl":null,"sourceUrl":null,"lastVerifiedAt":null,"verificationStatus":"review_required"},
+  {"id":"worker-support-center-type","officialName":null,"institutionType":"worker_support_center","jurisdiction":null,"supportedTasks":["interpretation_and_consultation_support"],"address":null,"phone":null,"officialUrl":null,"sourceUrl":null,"lastVerifiedAt":null,"verificationStatus":"review_required"}
+]
