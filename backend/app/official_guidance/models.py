@@ -57,3 +57,4 @@ class OfficialInstitution(GuidanceModel):
     source_url: HttpUrl | None = None
     last_verified_at: date | None = None
     verification_status: OfficialVerificationStatus
+    notes: list[str] = []
