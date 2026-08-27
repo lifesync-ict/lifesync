@@ -4,9 +4,9 @@ export type Urgency = 'overdue' | 'today' | 'urgent' | 'normal' | 'unknown'
 
 export type RequiredDocument = { id: string; name: string; issuer: ResponsibleParty | 'unknown'; required: boolean; note: string }
 export type ObligationItem = {
-  id: string; party: ResponsibleParty; title: string; description: string; deadline: string | null
+  id: string; party: ResponsibleParty; title: string; description: string; deadline: string | null; reviewDate: string | null
   deadlineLabel: string; daysRemaining: number | null; urgency: Urgency; requiredDocuments: RequiredDocument[]
-  evidenceId: string; status: 'pending' | 'completed'
+  question: string; rationale: string; evidenceId: string; status: 'pending' | 'completed'
 }
 export type RuleEvidence = {
   id: string; ruleName: string; issuingAgency: string; sourceTitle: string; sourceUrl: string | null
