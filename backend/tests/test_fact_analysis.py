@@ -23,7 +23,7 @@ def test_contract_end_and_only_missing_facts_are_asked(client, profile):
     asked = {question["factKey"] for question in body["questions"]}
     assert "eventType" not in asked
     assert "wantsWorkplaceChange" not in asked
-    assert asked == {"occurredAt", "documentsProvided"}
+    assert asked == {"occurredAt", "employmentContractEndedAt", "documentsProvided"}
 
 
 def test_employer_request_is_extracted(client, profile):
@@ -78,11 +78,15 @@ def test_confirm_merges_only_missing_answers(client):
     }
     response = client.post("/api/v1/facts/confirm", json={
         "sourceText": candidate["sourceText"], "eventCandidate": candidate,
-        "answers": {"occurredAt": "2026-08-20", "documentsProvided": False, "wantsWorkplaceChange": False},
+        "answers": {
+            "occurredAt": "2026-08-20", "employmentContractEndedAt": "2026-08-20",
+            "documentsProvided": False, "wantsWorkplaceChange": False,
+        },
         "confirmedByUser": True,
     })
     assert response.status_code == 200
     facts = response.json()["confirmedFacts"]
     assert facts["wantsWorkplaceChange"] is True
     assert facts["documentsProvided"] is False
+    assert facts["employmentContractEndedAt"] == "2026-08-20"
     assert facts["confirmationStatus"] == "user_confirmed"

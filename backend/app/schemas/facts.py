@@ -29,6 +29,7 @@ class Actor(StrEnum):
 class EventCandidate(ApiModel):
     event_type: EventType = EventType.UNKNOWN
     occurred_at: date | None = None
+    employment_contract_ended_at: date | None = None
     actor: Actor | None = None
     reason_code: str | None = None
     wants_workplace_change: bool | None = None
@@ -88,6 +89,7 @@ class ConfirmFactsRequest(ApiModel):
 class ConfirmedFacts(ApiModel):
     event_type: EventType
     occurred_at: date
+    employment_contract_ended_at: date
     actor: Actor
     reason_code: str | None
     wants_workplace_change: bool

@@ -46,7 +46,7 @@ class RuleEngineService:
             source = official_sources.get(OFFICIAL_SOURCE_BY_DEMO_EVIDENCE.get(rule["evidenceId"], ""))
             verified = source is not None and source.verification_status is OfficialVerificationStatus.VERIFIED
             calculated = calculate_verified_deadline(source.deadline_rule if verified and source else None, {
-                "occurred_at": facts.occurred_at,
+                "employment_contract_ended_at": facts.employment_contract_ended_at,
             })
             obligations.append(ObligationItem(
                 id=rule["id"], party=rule["party"], title_key=rule["titleKey"],

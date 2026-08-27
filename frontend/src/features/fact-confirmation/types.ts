@@ -1,10 +1,11 @@
 export type AnalysisStatus = 'analyzing' | 'needs_input' | 'ready_to_confirm' | 'confirmed' | 'review_required' | 'error'
 
-export type FactKey = 'eventType' | 'occurredAt' | 'actor' | 'documentsProvided' | 'wantsWorkplaceChange'
+export type FactKey = 'eventType' | 'occurredAt' | 'employmentContractEndedAt' | 'actor' | 'documentsProvided' | 'wantsWorkplaceChange'
 
 export type EventCandidate = {
   eventType: 'contract_ended' | 'dismissed' | 'other' | null
   occurredAt: string | null
+  employmentContractEndedAt: string | null
   actor: 'employer' | 'worker' | 'mutual' | null
   reasonCode: 'contract_end' | 'employer_request' | 'unknown' | null
   wantsWorkplaceChange: boolean | null
@@ -29,6 +30,7 @@ export type FactAnswers = Record<string, string>
 export type ConfirmedFacts = {
   eventType: EventCandidate['eventType']
   occurredAt: string | null
+  employmentContractEndedAt: string | null
   actor: EventCandidate['actor']
   reasonCode: EventCandidate['reasonCode']
   wantsWorkplaceChange: boolean | null

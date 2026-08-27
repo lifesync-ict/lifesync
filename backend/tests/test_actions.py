@@ -4,7 +4,14 @@ def test_supported_scenario_uses_verified_sources_without_unverified_deadlines(c
     body = response.json()
     assert body["status"] == "complete"
     assert {item["party"] for item in body["obligations"]} == {"worker", "employer", "institution"}
-    for item in body["obligations"]:
+    by_party = {item["party"]: item for item in body["obligations"]}
+    worker_item = by_party["worker"]
+    assert worker_item["deadline"] == "2026-09-20"
+    assert worker_item["daysRemaining"] is not None
+    assert worker_item["urgency"] != "unknown"
+    assert worker_item["deadlineLabelKey"] == "workplace_change_application_deadline"
+    for party in ("employer", "institution"):
+        item = by_party[party]
         assert item["deadline"] is None
         assert item["daysRemaining"] is None
         assert item["urgency"] == "unknown"

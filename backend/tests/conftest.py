@@ -40,7 +40,7 @@ def profile() -> dict[str, str]:
 @pytest.fixture
 def confirmed_facts() -> dict[str, object]:
     return {
-        "eventType": "contract_end", "occurredAt": "2026-08-20", "actor": "mutual",
+        "eventType": "contract_end", "occurredAt": "2026-08-20", "employmentContractEndedAt": "2026-08-20", "actor": "mutual",
         "reasonCode": "contract_end", "wantsWorkplaceChange": True, "documentsProvided": False,
         "sourceText": "계약이 끝났는데 다른 회사로 옮기고 싶어요", "confirmationStatus": "user_confirmed",
     }
