@@ -21,6 +21,7 @@ export type ApiDemoProfile = {
 export type ApiEventCandidate = {
   eventType: ApiEventType
   occurredAt: string | null
+  employmentContractEndedAt: string | null
   actor: ApiActor | null
   reasonCode: string | null
   wantsWorkplaceChange: boolean | null
@@ -52,6 +53,7 @@ export type AnalyzeFactsResponse = {
 export type ApiConfirmedFacts = {
   eventType: ApiEventType
   occurredAt: string
+  employmentContractEndedAt: string
   actor: ApiActor
   reasonCode: string | null
   wantsWorkplaceChange: boolean

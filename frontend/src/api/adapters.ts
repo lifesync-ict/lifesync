@@ -21,7 +21,7 @@ import type {
 import { resolveActionEvaluationStatus } from './actionState'
 import { buildPendingActionBundleItems, canonicalDemoProfile, demoReviewDate } from './guidancePolicy'
 
-const factKeys: FactKey[] = ['eventType', 'occurredAt', 'actor', 'documentsProvided', 'wantsWorkplaceChange']
+const factKeys: FactKey[] = ['eventType', 'occurredAt', 'employmentContractEndedAt', 'actor', 'documentsProvided', 'wantsWorkplaceChange']
 const isFactKey = (value: string): value is FactKey => factKeys.includes(value as FactKey)
 
 const eventFromApi = (value: ApiEventType): EventCandidate['eventType'] =>
@@ -36,11 +36,11 @@ export function profileToApi(profile: DemoProfile): ApiDemoProfile {
 }
 
 const promptByFact: Record<FactKey, string> = {
-  eventType: 'eventTypePrompt', occurredAt: 'occurredAtPrompt', actor: 'actorPrompt',
+  eventType: 'eventTypePrompt', occurredAt: 'occurredAtPrompt', employmentContractEndedAt: 'employmentContractEndedAtPrompt', actor: 'actorPrompt',
   documentsProvided: 'documentsPrompt', wantsWorkplaceChange: 'changePrompt',
 }
 const reasonByFact: Record<FactKey, string> = {
-  eventType: 'eventTypeReason', occurredAt: 'occurredAtReason', actor: 'actorReason',
+  eventType: 'eventTypeReason', occurredAt: 'occurredAtReason', employmentContractEndedAt: 'employmentContractEndedAtReason', actor: 'actorReason',
   documentsProvided: 'documentsReason', wantsWorkplaceChange: 'changeReason',
 }
 
@@ -89,6 +89,7 @@ export function analysisFromApi(response: AnalyzeFactsResponse): AnalysisResult 
     candidate: {
       eventType: eventFromApi(response.eventCandidate.eventType),
       occurredAt: response.eventCandidate.occurredAt,
+      employmentContractEndedAt: response.eventCandidate.employmentContractEndedAt,
       actor: actorFromApi(response.eventCandidate.actor),
       reasonCode: response.eventCandidate.reasonCode === 'employer_request' ? 'employer_request' : response.eventCandidate.reasonCode === 'contract_end' ? 'contract_end' : 'unknown',
       wantsWorkplaceChange: response.eventCandidate.wantsWorkplaceChange,
@@ -116,6 +117,7 @@ export function buildDraftFacts(candidate: EventCandidate, questions: Clarificat
   return {
     eventType,
     occurredAt: answerFor('occurredAt', questions, answers) || candidate.occurredAt,
+    employmentContractEndedAt: answerFor('employmentContractEndedAt', questions, answers) || candidate.employmentContractEndedAt,
     actor,
     reasonCode: eventType === 'dismissed' ? 'employer_request' : eventType === 'contract_ended' ? 'contract_end' : candidate.reasonCode,
     wantsWorkplaceChange: changeAnswer === undefined ? candidate.wantsWorkplaceChange : changeAnswer === 'yes' ? true : changeAnswer === 'no' ? false : null,
@@ -127,7 +129,7 @@ export function buildDraftFacts(candidate: EventCandidate, questions: Clarificat
 
 function candidateToApi(candidate: EventCandidate): ApiEventCandidate {
   return {
-    eventType: eventToApi(candidate.eventType), occurredAt: candidate.occurredAt, actor: candidate.actor ? actorToApi(candidate.actor) : null,
+    eventType: eventToApi(candidate.eventType), occurredAt: candidate.occurredAt, employmentContractEndedAt: candidate.employmentContractEndedAt, actor: candidate.actor ? actorToApi(candidate.actor) : null,
     reasonCode: candidate.reasonCode, wantsWorkplaceChange: candidate.wantsWorkplaceChange,
     documentsProvided: candidate.documentsProvided, confidence: candidate.confidence,
     sourceText: candidate.sourceText, missingFacts: candidate.missingFacts,
@@ -149,7 +151,7 @@ export function confirmationToApi(candidate: EventCandidate, questions: Clarific
 export function confirmedFromApi(response: ConfirmFactsResponse): ConfirmedFacts {
   const facts = response.confirmedFacts
   return {
-    eventType: eventFromApi(facts.eventType), occurredAt: facts.occurredAt, actor: actorFromApi(facts.actor),
+    eventType: eventFromApi(facts.eventType), occurredAt: facts.occurredAt, employmentContractEndedAt: facts.employmentContractEndedAt, actor: actorFromApi(facts.actor),
     reasonCode: facts.reasonCode === 'employer_request' ? 'employer_request' : facts.reasonCode === 'contract_end' ? 'contract_end' : 'unknown',
     wantsWorkplaceChange: facts.wantsWorkplaceChange, documentsProvided: facts.documentsProvided,
     sourceText: facts.sourceText, confirmedAt: response.meta.generatedAt,
@@ -157,9 +159,9 @@ export function confirmedFromApi(response: ConfirmFactsResponse): ConfirmedFacts
 }
 
 export function confirmedToApi(facts: ConfirmedFacts): ApiConfirmedFacts {
-  if (!facts.occurredAt || facts.wantsWorkplaceChange === null || facts.documentsProvided === null) throw new Error('incomplete_confirmed_facts')
+  if (!facts.occurredAt || !facts.employmentContractEndedAt || facts.wantsWorkplaceChange === null || facts.documentsProvided === null) throw new Error('incomplete_confirmed_facts')
   return {
-    eventType: eventToApi(facts.eventType), occurredAt: facts.occurredAt, actor: actorToApi(facts.actor),
+    eventType: eventToApi(facts.eventType), occurredAt: facts.occurredAt, employmentContractEndedAt: facts.employmentContractEndedAt, actor: actorToApi(facts.actor),
     reasonCode: facts.reasonCode, wantsWorkplaceChange: facts.wantsWorkplaceChange,
     documentsProvided: facts.documentsProvided, sourceText: facts.sourceText, confirmationStatus: 'user_confirmed',
   }

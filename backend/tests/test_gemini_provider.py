@@ -64,7 +64,7 @@ def test_gemini_structured_result_keeps_existing_api_schema(client, profile, mon
     assert candidate["actor"] == "employer"
     assert candidate["wantsWorkplaceChange"] is True
     assert candidate["documentsProvided"] is False
-    assert body["questions"] == []
+    assert [question["factKey"] for question in body["questions"]] == ["employmentContractEndedAt"]
     assert body["warnings"] == []
     assert body["meta"]["verificationStatus"] == "review_required"
     assert models.last_config.response_mime_type == "application/json"

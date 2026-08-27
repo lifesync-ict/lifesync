@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import heroImage from '../assets/lifesync-hero-v2.png'
+import heroImage from '../assets/lifesync-hero-ribbon.png'
 import { AppHeader } from '../components/AppHeader'
 import { translations, type LanguageCode } from '../data/translations'
 

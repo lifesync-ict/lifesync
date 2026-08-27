@@ -15,6 +15,7 @@ from app.services.fact_analysis.factory import create_fact_analysis_provider
 QUESTION_DEFINITIONS = {
     "eventType": ("fact_event_type", ["event_contract_end", "event_employer_request"], "reason_event_type", "single_choice"),
     "occurredAt": ("fact_occurred_at", [], "reason_occurred_at", "date"),
+    "employmentContractEndedAt": ("fact_employment_contract_ended_at", [], "reason_employment_contract_ended_at", "date"),
     "actor": ("fact_actor", ["actor_employer", "actor_mutual"], "reason_actor", "single_choice"),
     "wantsWorkplaceChange": ("fact_wants_workplace_change", ["yes", "no"], "reason_workplace_change", "single_choice"),
     "documentsProvided": ("fact_documents_provided", ["documents_provided", "documents_not_provided"], "reason_documents", "single_choice"),
@@ -34,6 +35,10 @@ class FactAnalysisService:
             candidate = await self.fallback_provider.analyze(request.text, request.language, request.profile)
             warnings.append(exc.code)
             warnings.append("deterministic_fallback_used")
+        missing_facts = list(candidate.missing_facts)
+        if candidate.employment_contract_ended_at is None and "employmentContractEndedAt" not in missing_facts:
+            missing_facts.append("employmentContractEndedAt")
+        candidate.missing_facts = missing_facts
         questions = [self._question(key) for key in candidate.missing_facts]
         if candidate.event_type == EventType.UNKNOWN:
             status = "review_required"
@@ -60,6 +65,7 @@ class FactAnalysisService:
         values: dict[str, Any] = {
             "eventType": candidate.event_type if candidate.event_type != EventType.UNKNOWN else None,
             "occurredAt": candidate.occurred_at,
+            "employmentContractEndedAt": candidate.employment_contract_ended_at,
             "actor": candidate.actor,
             "wantsWorkplaceChange": candidate.wants_workplace_change,
             "documentsProvided": candidate.documents_provided,
@@ -72,7 +78,8 @@ class FactAnalysisService:
             raise ApiError(422, "missing_required_facts", "필수 확인 사실이 누락되었습니다.", missing)
         try:
             facts = ConfirmedFacts(
-                event_type=values["eventType"], occurred_at=values["occurredAt"], actor=values["actor"],
+                event_type=values["eventType"], occurred_at=values["occurredAt"],
+                employment_contract_ended_at=values["employmentContractEndedAt"], actor=values["actor"],
                 reason_code=candidate.reason_code, wants_workplace_change=values["wantsWorkplaceChange"],
                 documents_provided=values["documentsProvided"], source_text=" ".join(request.source_text.split()),
             )
