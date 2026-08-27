@@ -19,6 +19,7 @@ import type {
   PrepareHandoffResponse,
 } from './contracts'
 import { resolveActionEvaluationStatus } from './actionState'
+import { buildPendingActionBundleItems, canonicalDemoProfile, demoReviewDate } from './guidancePolicy'
 
 const factKeys: FactKey[] = ['eventType', 'occurredAt', 'actor', 'documentsProvided', 'wantsWorkplaceChange']
 const isFactKey = (value: string): value is FactKey => factKeys.includes(value as FactKey)
@@ -31,10 +32,7 @@ const actorFromApi = (value: ApiActor | null): EventCandidate['actor'] => value 
 const actorToApi = (value: EventCandidate['actor']): ApiActor => value === 'employer' || value === 'mutual' ? value : 'unknown'
 
 export function profileToApi(profile: DemoProfile): ApiDemoProfile {
-  const region = /eumseong/i.test(profile.region) ? '충북 음성군' : profile.region
-  const industry = /manufacturing/i.test(profile.industry) ? '제조업' : profile.industry
-  const nationality = /^vietnam$/i.test(profile.nationality) ? '베트남' : profile.nationality
-  return { visaType: profile.visa, nationality, region, industry }
+  return canonicalDemoProfile(profile)
 }
 
 const promptByFact: Record<FactKey, string> = {
@@ -172,6 +170,11 @@ const obligationKeys: Record<string, [string, string]> = {
   'employer-documents': ['employerDocumentsTitle', 'employerDocumentsDescription'],
   'institution-check': ['institutionCheckTitle', 'institutionCheckDescription'],
 }
+const guidanceKeys = {
+  worker: { question: 'workerQuestion', rationale: 'workerRationale' },
+  employer: { question: 'employerQuestion', rationale: 'employerRationale' },
+  institution: { question: 'institutionQuestion', rationale: 'institutionRationale' },
+} as const
 const documentKeys: Record<string, [string, string]> = {
   'employment-event-record': ['eventRecord', 'demoDocumentNote'],
   'employment-document': ['employmentDocument', 'documentNotReceived'],
@@ -192,7 +195,7 @@ const evidenceFromApi = (evidence: ApiRuleEvidence, generatedAt: string): RuleEv
   sourceUrl: evidence.sourceUrl ?? null, effectiveFrom: null, checkedAt: evidence.checkedAt ?? generatedAt.slice(0, 10),
   verificationStatus: evidence.verificationStatus === 'verified' ? 'verified' : 'review_required', applicabilityNote: evidence.applicabilityNoteKey,
 })
-const obligationFromApi = (item: ApiObligationItem): ObligationItem => {
+const obligationFromApi = (item: ApiObligationItem, occurredAt: string | null): ObligationItem => {
   const mapped = obligationKeys[item.id]
   const defaultText = item.party === 'employer'
     ? ['employerDocumentsTitle', 'employerDocumentsDescription']
@@ -202,15 +205,16 @@ const obligationFromApi = (item: ApiObligationItem): ObligationItem => {
   const evidenceId = item.evidenceId.includes('immigration') ? 'immigration' : item.evidenceId.includes('moel') ? 'moel' : item.evidenceId.includes('eps') ? 'eps' : item.evidenceId
   return {
     id: item.id, party: item.party, title: mapped?.[0] ?? defaultText[0], description: mapped?.[1] ?? defaultText[1],
-    deadline: null, deadlineLabel: item.deadlineLabelKey, daysRemaining: null, urgency: 'unknown',
-    requiredDocuments: item.requiredDocuments.map(documentFromApi), evidenceId, status: item.status,
+    deadline: null, reviewDate: demoReviewDate(occurredAt), deadlineLabel: item.deadlineLabelKey, daysRemaining: null, urgency: 'unknown',
+    requiredDocuments: item.requiredDocuments.map(documentFromApi), question: guidanceKeys[item.party].question,
+    rationale: guidanceKeys[item.party].rationale, evidenceId, status: item.status,
   }
 }
 
-export function actionsFromApi(response: EvaluateActionsResponse): ActionGuidanceResult {
+export function actionsFromApi(response: EvaluateActionsResponse, facts?: Pick<ConfirmedFacts, 'occurredAt'>): ActionGuidanceResult {
   return {
     evaluationStatus: resolveActionEvaluationStatus(response), scenarioSummary: response.scenarioSummaryKey,
-    obligations: response.obligations.map(obligationFromApi), evidence: response.evidence.map((item) => evidenceFromApi(item, response.meta.generatedAt)),
+    obligations: response.obligations.map((item) => obligationFromApi(item, facts?.occurredAt ?? null)), evidence: response.evidence.map((item) => evidenceFromApi(item, response.meta.generatedAt)),
     warnings: response.warnings.map((warning) => warningKeys[warning] ?? (response.status === 'review_required' ? 'reviewRequired' : 'officialCheckRequired')),
   }
 }
@@ -231,25 +235,33 @@ const bundleTitleById: Record<string, string> = {
 }
 const bundleFromApi = (item: ApiEvidenceBundleItem): EvidenceBundleItem => ({
   id: item.id,
-  category: ['situation', 'fact', 'profile', 'action', 'question', 'document', 'warning'].includes(item.category) ? item.category as EvidenceBundleItem['category'] : 'warning',
+  category: item.category === 'facts' ? 'fact' : item.category === 'actions' ? 'action' : ['situation', 'fact', 'profile', 'action', 'question', 'document', 'warning'].includes(item.category) ? item.category as EvidenceBundleItem['category'] : 'warning',
   title: bundleTitleById[item.id] ?? bundleTitleById[item.titleKey] ?? 'unverifiedInformation',
   description: bundleTitleById[item.id] === 'sourceText' ? 'sourceText' : bundleTitleById[item.id] === 'confirmedFacts' ? 'confirmedFactsDescription' : bundleTitleById[item.id] === 'demoProfile' ? 'demoProfileDescription' : bundleTitleById[item.id] === 'unverifiedInformation' ? 'unverifiedDescription' : 'pendingAction',
   included: item.included, required: item.required,
   source: ['user', 'confirmed_facts', 'action_guidance', 'demo_profile'].includes(item.source) ? item.source as EvidenceBundleItem['source'] : 'action_guidance',
 })
 
-export function handoffFromApi(response: PrepareHandoffResponse, facts: ConfirmedFacts, actions: ActionGuidanceResult, completedIds: string[]): HandoffResult {
+export function handoffFromApi(response: PrepareHandoffResponse, facts: ConfirmedFacts, actions: ActionGuidanceResult, completedIds: string[], profile: DemoProfile): HandoffResult {
   const institutions = [response.primaryInstitution, ...response.alternativeInstitutions].filter((item): item is ApiInstitutionCandidate => item !== null).map(institutionFromApi)
   const completedActions = actions.obligations.filter((item) => completedIds.includes(item.id)).map((item) => item.title)
   const pendingActions = actions.obligations.filter((item) => !completedIds.includes(item.id)).map((item) => item.title)
+  const apiBundle = response.evidenceBundle.map(bundleFromApi).filter((item) => item.id !== 'action-status')
+  const evidenceBundle: EvidenceBundleItem[] = [
+    ...apiBundle,
+    ...(apiBundle.some((item) => item.category === 'profile') ? [] : [{ id: 'demo-profile', category: 'profile' as const, title: 'demoProfile', description: 'demoProfileDescription', literal: `${profile.visa} · ${profile.region} · ${profile.industry}`, included: true, required: false, source: 'demo_profile' as const }]),
+    ...buildPendingActionBundleItems(actions.obligations, completedIds).map((item) => ({ ...item, category: 'action' as const, included: true, required: false, source: 'action_guidance' as const })),
+    ...response.questionsToAsk.map((question, index) => ({ id: `question-${index}`, category: 'question' as const, title: 'questionForInstitution', description: question === 'question_workplace_change_reason' ? 'questionEligibility' : question === 'question_alternative_document_evidence' ? 'questionMissingDocuments' : question === 'question_visa_procedure' ? 'questionVisa' : 'questionJurisdiction', included: true, required: false, source: 'action_guidance' as const })),
+    ...Array.from(new Set(actions.obligations.flatMap((item) => item.requiredDocuments.map((document) => document.name)))).map((document, index) => ({ id: `document-${index}`, category: 'document' as const, title: 'documentToCheck', description: document, included: true, required: false, source: 'action_guidance' as const })),
+  ]
   return {
     status: response.status, primaryInstitution: response.primaryInstitution ? institutionFromApi(response.primaryInstitution) : null,
-    alternativeInstitutions: response.alternativeInstitutions.map(institutionFromApi), evidenceBundle: response.evidenceBundle.map(bundleFromApi),
+    alternativeInstitutions: response.alternativeInstitutions.map(institutionFromApi), evidenceBundle,
     summary: {
       situationSummary: facts.sourceText, confirmedFacts: facts, completedActions, pendingActions,
       questionsToAsk: response.questionsToAsk, documentsToBring: actions.obligations.flatMap((item) => item.requiredDocuments.map((document) => document.name)),
       institutions, generatedAt: response.meta.generatedAt, disclaimer: response.privacyNoticeKey,
     },
-    warnings: response.warnings.map((warning) => warning === 'no_submission_or_booking_performed' ? 'noSubmission' : warning === 'no_personal_information_included' ? 'noPersonalData' : 'institutionUnverified'),
+    warnings: response.warnings.filter((warning) => warning === 'no_personal_information_included').map(() => 'noPersonalData'),
   }
 }
