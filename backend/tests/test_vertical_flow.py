@@ -9,6 +9,7 @@ def test_facts_to_handoff_flow_preserves_supported_scenario(client, profile):
     assert candidate["wantsWorkplaceChange"] is True
 
     answers = {question["factKey"]: "employer" for question in analyzed.json()["questions"] if question["factKey"] == "actor"}
+    answers["employmentContractEndedAt"] = "2026-08-20"
     confirmed = client.post("/api/v1/facts/confirm", json={
         "sourceText": text, "eventCandidate": candidate, "answers": answers, "confirmedByUser": True,
     })
@@ -25,5 +26,5 @@ def test_facts_to_handoff_flow_preserves_supported_scenario(client, profile):
         "completedActionIds": [], "selectedEvidenceItemIds": [],
     })
     assert handoff.status_code == 200
-    assert handoff.json()["primaryInstitution"]["name"] is None
-    assert handoff.json()["primaryInstitution"]["phone"] is None
+    assert handoff.json()["primaryInstitution"]["name"] == "고용노동부 충주지청"
+    assert handoff.json()["primaryInstitution"]["phone"] is not None

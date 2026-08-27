@@ -25,7 +25,14 @@ def guidance(**overrides):
 
 def test_repository_loads_only_validated_official_data():
     assert all(item.source_url for item in load_official_guidance() if item.verification_status == "verified")
-    assert all(item.verification_status == "review_required" for item in load_official_institutions())
+    institutions = load_official_institutions()
+    for item in institutions:
+        if item.verification_status == "verified":
+            assert item.official_name and item.source_url and item.last_verified_at
+        else:
+            assert item.official_name is None
+            assert item.address is None
+            assert item.phone is None
 
 
 def test_non_official_domain_is_blocked():
