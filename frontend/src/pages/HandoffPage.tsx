@@ -10,7 +10,8 @@ import { confirmedToApi, handoffFromApi, profileToApi } from '../api/adapters'
 import { shouldShowSharedHandoffNotice } from '../api/guidancePolicy'
 import { actionStorage } from '../features/action-guidance/storage'
 import { actionTranslations } from '../features/action-guidance/translations'
-import { buildHandoffBundle, downloadJson, summaryText } from '../features/institution-handoff/bundleUtils'
+import { downloadPdf } from '../features/institution-handoff/bundleUtils'
+import { summaryText, type HandoffExportSummary, type SummaryEntry } from '../features/institution-handoff/summaryFormat'
 import { clearLifeSyncSession, handoffStorage } from '../features/institution-handoff/storage'
 import { handoffTranslations } from '../features/institution-handoff/translations'
 import type { HandoffResult, HandoffStatus } from '../features/institution-handoff/types'
@@ -57,13 +58,37 @@ export function HandoffPage({ language, onLanguageChange }: Props) {
     if (item.id === 'demo-profile') return [demoProfile.visa, content.profile.regionValue, content.profile.industryValue].join(' · ')
     return item.literal ?? itemDescription(item.description)
   }
-  const exportData = () => {
+  const exportData = (): HandoffExportSummary | null => {
     if (!result) return null
-    const localized = { ...result, evidenceBundle: result.evidenceBundle.map((item) => ({ ...item, title: itemTitle(item.title), description: itemDisplayDescription(item) })) }
-    return buildHandoffBundle(localized, included, language, copy.privacyNotice)
+    const now = new Date()
+    const institutionEntry = (institution: NonNullable<HandoffResult['primaryInstitution']>): SummaryEntry => ({
+      title: copy.institutions[institution.type],
+      fields: [
+        { label: copy.role, value: copy.roles[institution.role] },
+        { label: copy.reason, value: copy.reasons[institution.reason] },
+        { label: copy.questionLabel ?? copy.reason, value: copy.institutionQuestions?.[institution.type] ?? copy.questions.questionJurisdiction },
+        ...(institution.jurisdiction ? [{ label: copy.jurisdiction, value: institution.jurisdiction }] : []),
+        ...(institution.address ? [{ value: institution.address }] : []),
+        ...(institution.phone ? [{ value: institution.phone }] : []),
+        ...(institution.sourceUrl ? [{ value: institution.sourceUrl }] : []),
+      ],
+    })
+    return {
+      title: copy.bundleTitle,
+      generatedAtLabel: copy.generatedAtLabel,
+      generatedAt: new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(now),
+      filenameDate: now.toISOString().slice(0, 10),
+      sections: [
+        { title: copy.bundleTitle, entries: result.evidenceBundle.filter((item) => included[item.id] ?? item.included).map((item) => ({ title: itemTitle(item.title), description: itemDisplayDescription(item) })) },
+        { title: copy.primary, entries: result.primaryInstitution ? [institutionEntry(result.primaryInstitution)] : [] },
+        { title: copy.alternatives, entries: result.alternativeInstitutions.map(institutionEntry) },
+      ],
+      noticesTitle: copy.warningTitle,
+      notices: [copy.privacyNotice, copy.jurisdictionNotice ?? copy.reviewMessage],
+    }
   }
   const copySummary = async () => { try { const data = exportData(); if (!data) return; await navigator.clipboard.writeText(summaryText(data)); setMessage(copy.copySuccess) } catch { setMessage(copy.copyError) } }
-  const saveSummary = () => { try { const data = exportData(); if (!data) throw new Error(); downloadJson(data); setMessage('') } catch { setMessage(copy.downloadError) } }
+  const saveSummary = async () => { try { const data = exportData(); if (!data) throw new Error(); await downloadPdf(data); setMessage(copy.downloadSuccess) } catch { setMessage(copy.downloadError) } }
   const restart = () => { clearLifeSyncSession(); setDialogOpen(false); navigate('/situation') }
   const institutionCard = (institution: NonNullable<HandoffResult['primaryInstitution']>) => <article className="institution-card" key={institution.id}><h3>{copy.institutions[institution.type]}</h3><dl><div><dt>{copy.role}</dt><dd>{copy.roles[institution.role]}</dd></div><div><dt>{copy.reason}</dt><dd>{copy.reasons[institution.reason]}</dd></div><div><dt>{copy.questionLabel ?? copy.reason}</dt><dd>{copy.institutionQuestions?.[institution.type] ?? copy.questions.questionJurisdiction}</dd></div>{institution.jurisdiction && <div><dt>{copy.jurisdiction}</dt><dd>{institution.jurisdiction}</dd></div>}</dl>{institution.address && <address>{institution.address}</address>}{institution.phone && <a href={`tel:${institution.phone}`}>{institution.phone}</a>}{institution.sourceUrl && <a href={institution.sourceUrl} target="_blank" rel="noreferrer">{institution.sourceUrl}</a>}</article>
   const pageTitle = status === 'preparing' ? copy.loading : status === 'error' ? copy.errorTitle : status === 'needs_review' ? copy.reviewTitle : copy.title
@@ -74,7 +99,7 @@ export function HandoffPage({ language, onLanguageChange }: Props) {
     {status === 'error' && <><StatusSection icon={<AlertTriangle />} tone="error" title={copy.errorTitle} description={copy.errorMessage} actions={<><button className="next-button" type="button" onClick={() => void retry()}><RefreshCw size={17} aria-hidden="true" />{copy.retry}</button><button className="back-button" type="button" onClick={() => navigate('/actions')}><ArrowLeft size={17} aria-hidden="true" />{copy.actions}</button></>} />{result?.primaryInstitution && <section className="retained-context"><h2>{copy.primary}</h2>{institutionCard(result.primaryInstitution)}</section>}</>}
     {(status === 'ready' || status === 'needs_review') && result && <>
       <section className="institution-section"><h2>{copy.primary}</h2>{result.primaryInstitution ? institutionCard(result.primaryInstitution) : <p>{copy.infoPending}</p>}<h2>{copy.alternatives}</h2><div className="institution-grid">{result.alternativeInstitutions.map(institutionCard)}</div></section>
-      <section className="bundle-section"><h2>{copy.bundleTitle}</h2><p>{copy.bundleDescription}</p><div className="bundle-list">{result.evidenceBundle.map((item) => <label key={item.id}><input type="checkbox" checked={included[item.id] ?? item.included} onChange={() => toggle(item.id)} /><span><strong>{itemTitle(item.title)}</strong><small>{itemDisplayDescription(item)}</small></span><em>{copy.include}</em></label>)}</div><p className="privacy-note">{copy.privacyNotice}</p><div className="bundle-actions"><button className="back-button" type="button" onClick={() => void copySummary()}><ClipboardCopy size={17} aria-hidden="true" />{copy.copy}</button><button className="next-button" type="button" onClick={saveSummary}><Download size={17} aria-hidden="true" />{copy.download}</button></div><p className="handoff-message" aria-live="polite">{message}</p></section>
+      <section className="bundle-section"><h2>{copy.bundleTitle}</h2><p>{copy.bundleDescription}</p><div className="bundle-list">{result.evidenceBundle.map((item) => <label key={item.id}><input type="checkbox" checked={included[item.id] ?? item.included} onChange={() => toggle(item.id)} /><span><strong>{itemTitle(item.title)}</strong><small>{itemDisplayDescription(item)}</small></span><em>{copy.include}</em></label>)}</div><p className="privacy-note">{copy.privacyNotice}</p><div className="bundle-actions"><button className="back-button" type="button" onClick={() => void copySummary()}><ClipboardCopy size={17} aria-hidden="true" />{copy.copy}</button><button className="next-button" type="button" onClick={() => void saveSummary()}><Download size={17} aria-hidden="true" />{copy.download}</button></div><p className="handoff-message" aria-live="polite">{message}</p></section>
       {result.warnings.length > 0 && <section className="handoff-warnings"><h2>{copy.warningTitle}</h2>{result.warnings.map((warning) => <p key={warning}>{copy.warnings[warning]}</p>)}</section>}
       <div className="handoff-nav"><button className="back-button" type="button" onClick={() => navigate('/confirm')}><ArrowLeft size={17} aria-hidden="true" />{copy.edit}</button><button className="back-button" type="button" onClick={() => navigate('/actions')}>{copy.actions}</button><button className="restart-button" type="button" onClick={() => setDialogOpen(true)}><RotateCcw size={17} aria-hidden="true" />{copy.restart}</button></div>
     </>}

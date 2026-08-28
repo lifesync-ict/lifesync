@@ -4,6 +4,8 @@ import { resolveActionEvaluationStatus } from '../src/api/actionState.ts'
 import { buildPendingActionBundleItems, canShowOfficialEvidence, canonicalDemoProfile, containsInternalDisplayValue, demoReviewDate, shouldShowSharedHandoffNotice } from '../src/api/guidancePolicy.ts'
 import { actionTranslations } from '../src/features/action-guidance/translations.ts'
 import { handoffTranslations } from '../src/features/institution-handoff/translations.ts'
+import { summaryText } from '../src/features/institution-handoff/summaryFormat.ts'
+import { optionFromApi } from '../src/api/factOptionMapping.ts'
 
 test('review-required evidence does not block a non-empty action result', () => {
   assert.equal(resolveActionEvaluationStatus({ status: 'review_required', obligations: [{ id: 'demo-action' }] }), 'complete')
@@ -47,4 +49,24 @@ test('handoff uses one shared jurisdiction notice without candidate labels', () 
 test('an unsupported empty result uses the expert-review branch', () => {
   assert.equal(resolveActionEvaluationStatus({ status: 'review_required', obligations: [] }), 'needs_review')
   assert.equal(resolveActionEvaluationStatus({ status: 'complete', obligations: [] }), 'needs_review')
+})
+
+test('workplace-change yes and no options remain distinct', () => {
+  assert.deepEqual(['yes', 'no'].map((key) => optionFromApi('wantsWorkplaceChange', key)), [
+    { value: 'yes', labelKey: 'yes' },
+    { value: 'no', labelKey: 'no' },
+  ])
+})
+
+test('handoff copy is formatted as readable text instead of JSON', () => {
+  const text = summaryText({
+    title: '기관 인계 요약', generatedAtLabel: '생성 시각', generatedAt: '2026. 8. 28. 오전 10:00', filenameDate: '2026-08-28',
+    sections: [{ title: '기관에 보여줄 내용', entries: [{ title: '확정된 사실', description: '사업주가 그만두라고 함' }] }],
+    noticesTitle: '문의 전 확인', notices: ['개인정보는 포함하지 않습니다.'],
+  })
+  assert.match(text, /^기관 인계 요약\n생성 시각:/)
+  assert.match(text, /\[기관에 보여줄 내용\]\n1\. 확정된 사실/)
+  assert.match(text, /\[문의 전 확인\]\n- 개인정보는 포함하지 않습니다\./)
+  assert.equal(text.trimStart().startsWith('{'), false)
+  assert.equal(text.includes('"sections"'), false)
 })
