@@ -10,7 +10,7 @@ import type {
   ReadyResponse,
 } from './contracts'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8002').replace(/\/$/, '')
 const DEFAULT_TIMEOUT_MS = 20_000
 
 export type ApiErrorKind = 'cancelled' | 'timeout' | 'network' | 'http' | 'invalid_response'
