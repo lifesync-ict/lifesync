@@ -2,6 +2,10 @@
 
 외국인 근로자가 사업장 변경과 관련된 상황을 쉬운 언어로 정리하고, 확인해야 할 사실·다음 행동·문의 기관을 단계별로 준비할 수 있도록 돕는 다국어 행정 지원 서비스입니다.
 
+## 배포 링크
+- 서비스 바로가기: https://lifesync-five-ashen.vercel.app
+- 백엔드 API 문서: https://lifesync-production-1775.up.railway.app/docs
+
 ## 주요 흐름
 
 1. 사용자가 현재 상황을 자연어로 입력합니다.
