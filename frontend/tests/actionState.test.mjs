@@ -4,6 +4,8 @@ import { resolveActionEvaluationStatus } from '../src/api/actionState.ts'
 import { buildPendingActionBundleItems, canShowOfficialEvidence, canonicalDemoProfile, containsInternalDisplayValue, demoReviewDate, shouldShowSharedHandoffNotice } from '../src/api/guidancePolicy.ts'
 import { actionTranslations } from '../src/features/action-guidance/translations.ts'
 import { handoffTranslations } from '../src/features/institution-handoff/translations.ts'
+import { factTranslations } from '../src/features/fact-confirmation/translations.ts'
+import { datePartsToIso, parseIsoDate } from '../src/features/fact-confirmation/dateInput.ts'
 import { summaryText } from '../src/features/institution-handoff/summaryFormat.ts'
 import { optionFromApi } from '../src/api/factOptionMapping.ts'
 
@@ -56,6 +58,14 @@ test('workplace-change yes and no options remain distinct', () => {
     { value: 'yes', labelKey: 'yes' },
     { value: 'no', labelKey: 'no' },
   ])
+})
+
+test('localized date controls keep one valid ISO value', () => {
+  assert.deepEqual(parseIsoDate('2026-08-28'), { year: '2026', month: '8', day: '28' })
+  assert.equal(datePartsToIso({ year: '2024', month: '2', day: '29' }), '2024-02-29')
+  assert.equal(datePartsToIso({ year: '2023', month: '2', day: '29' }), '')
+  assert.deepEqual(factTranslations.en.dateInput, { labels: { year: 'Year', month: 'Month', day: 'Day' }, order: ['month', 'day', 'year'] })
+  assert.deepEqual(factTranslations.vi.dateInput.order, ['day', 'month', 'year'])
 })
 
 test('handoff copy is formatted as readable text instead of JSON', () => {
