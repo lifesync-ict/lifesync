@@ -35,7 +35,8 @@
 /* Alignment and landing consistency */
 .site-header,.progress-area,.situation-layout,.fact-layout,.guidance-layout,.handoff-layout,.confirm-panel,.actions-panel{width:min(calc(100% - var(--gutter)*2),var(--app-content-width))}
 .question-panel,.fact-summary,.status-section,.guidance-summary,.obligation-list,.institution-section,.bundle-section,.retained-context,.empty-state{width:100%;max-width:none;margin-inline:0}
-.question-panel form{max-width:780px}.workflow-panel,.candidate-panel,.guidance-summary,.obligation-card,.institution-card,.bundle-section{border-radius:var(--radius)}
+.question-panel form{width:100%}.workflow-panel,.candidate-panel,.guidance-summary,.obligation-card,.institution-card,.bundle-section{border-radius:var(--radius)}
+.scenario-comparisons+.guidance-actions{padding-top:0;margin-top:16px;border-top:0}
 .landing-shell::before{background:radial-gradient(ellipse 42% 48% at 50% 50%,rgba(250,247,237,.72),rgba(250,247,237,.25) 60%,transparent 82%)}
 .hero-section{min-height:calc(100svh - var(--header));padding:clamp(34px,7vh,76px) var(--gutter);place-items:center;text-align:center}
 .hero-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:clamp(40px,6vw,88px);width:min(100%,1180px)}
@@ -54,4 +55,4 @@
 .review-scenario-guidance{font-weight:650;line-height:1.6}
 
 @media(max-width:768px){.site-header,.progress-area,.situation-layout,.fact-layout,.guidance-layout,.handoff-layout,.confirm-panel,.actions-panel{width:calc(100% - var(--gutter)*2)}.hero-copy{text-align:center}.hero-title{font-size:clamp(48px,14vw,68px)}.hero-row{grid-template-columns:1fr;gap:36px}.hero-steps{width:min(420px,100%);margin:0 auto;padding:26px 24px}}
-@media(max-width:390px){.hero-section{padding:24px 16px}.hero-tagline{max-width:280px;margin-top:14px;font-size:clamp(14px,4vw,16px);line-height:1.5}.hero-copy .start-button{width:min(100%,360px);min-height:60px;margin-top:34px}.hero-copy .landing-trust{margin-top:18px;font-size:.76rem}.hero-row{gap:28px}.hero-steps{padding:22px 20px}.question-panel form{max-width:none}}
+@media(max-width:390px){.hero-section{padding:24px 16px}.hero-tagline{max-width:280px;margin-top:14px;font-size:clamp(14px,4vw,16px);line-height:1.5}.hero-copy .start-button{width:min(100%,360px);min-height:60px;margin-top:34px}.hero-copy .landing-trust{margin-top:18px;font-size:.76rem}.hero-row{gap:28px}.hero-steps{padding:22px 20px}}

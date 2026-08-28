@@ -65,8 +65,8 @@ test('handoff copy is formatted as readable text instead of JSON', () => {
     noticesTitle: '문의 전 확인', notices: ['개인정보는 포함하지 않습니다.'],
   })
   assert.match(text, /^기관 인계 요약\n생성 시각:/)
-  assert.match(text, /\[기관에 보여줄 내용\]\n1\. 확정된 사실/)
-  assert.match(text, /\[문의 전 확인\]\n- 개인정보는 포함하지 않습니다\./)
+  assert.match(text, /기관에 보여줄 내용\n- 확정된 사실/)
+  assert.match(text, /문의 전 확인\n- 개인정보는 포함하지 않습니다\./)
   assert.equal(text.trimStart().startsWith('{'), false)
   assert.equal(text.includes('"sections"'), false)
 })

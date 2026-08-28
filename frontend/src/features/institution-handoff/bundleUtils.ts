@@ -11,7 +11,7 @@ const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) =
 function createPdfDocument(data: HandoffExportSummary) {
   const root = element('article')
   Object.assign(root.style, {
-    position: 'fixed', left: '-10000px', top: '0', width: '760px', padding: '42px 46px',
+    position: 'relative', width: '760px', padding: '42px 46px', boxSizing: 'border-box',
     color: '#263e4d', background: '#fffefa', fontFamily: 'Pretendard, "Noto Sans KR", Arial, sans-serif',
     fontSize: '14px', lineHeight: '1.65', letterSpacing: '-0.01em',
   })
@@ -74,10 +74,13 @@ function createPdfDocument(data: HandoffExportSummary) {
   return root
 }
 
-export async function downloadPdf(data: HandoffExportSummary) {
+export async function createPdfBlob(data: HandoffExportSummary) {
   const { default: html2pdf } = await import('html2pdf.js')
   const root = createPdfDocument(data)
-  document.body.append(root)
+  const staging = element('div')
+  Object.assign(staging.style, { position: 'fixed', left: '-10000px', top: '0', width: '760px', pointerEvents: 'none' })
+  staging.append(root)
+  document.body.append(staging)
   try {
     await document.fonts?.ready
     const options = {
@@ -98,15 +101,20 @@ export async function downloadPdf(data: HandoffExportSummary) {
     }
     const blob = await worker.outputPdf('blob') as Blob
     if (blob.type !== 'application/pdf' || blob.size < 1_000 || await blob.slice(0, 5).text() !== '%PDF-') throw new Error('invalid_pdf_output')
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `lifesync-handoff-summary-${safeFilenameDate(data.filenameDate)}.pdf`
-    anchor.hidden = true
-    document.body.append(anchor)
-    anchor.click()
-    window.setTimeout(() => { anchor.remove(); URL.revokeObjectURL(url) }, 60_000)
+    return blob
   } finally {
-    root.remove()
+    staging.remove()
   }
+}
+
+export async function downloadPdf(data: HandoffExportSummary) {
+  const blob = await createPdfBlob(data)
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `lifesync-handoff-summary-${safeFilenameDate(data.filenameDate)}.pdf`
+  anchor.hidden = true
+  document.body.append(anchor)
+  anchor.click()
+  window.setTimeout(() => { anchor.remove(); URL.revokeObjectURL(url) }, 60_000)
 }

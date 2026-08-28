@@ -73,13 +73,36 @@ export function HandoffPage({ language, onLanguageChange }: Props) {
         ...(institution.sourceUrl ? [{ value: institution.sourceUrl }] : []),
       ],
     })
+    const evidenceEntry = (item: HandoffResult['evidenceBundle'][number]): SummaryEntry => {
+      if (item.id === 'source-text') return { title: itemTitle(item.title), description: facts.sourceText }
+      if (item.id === 'confirmed-facts') return {
+        title: itemTitle(item.title),
+        fields: [
+          { label: factCopy.facts.eventType, value: facts.eventType ? factCopy.values[facts.eventType] : factCopy.notConfirmed },
+          { label: factCopy.facts.occurredAt, value: facts.occurredAt ?? factCopy.notConfirmed },
+          ...(facts.employmentContractEndedAt ? [{ label: factCopy.facts.employmentContractEndedAt, value: facts.employmentContractEndedAt }] : []),
+          { label: factCopy.facts.actor, value: formatFactValue('actor', facts.actor, factCopy) },
+          { label: factCopy.facts.documentsProvided, value: formatFactValue('documentsProvided', facts.documentsProvided, factCopy) },
+          { label: factCopy.facts.wantsWorkplaceChange, value: formatFactValue('wantsWorkplaceChange', facts.wantsWorkplaceChange, factCopy) },
+        ],
+      }
+      if (item.id === 'demo-profile') return {
+        title: itemTitle(item.title),
+        fields: [
+          { label: content.profile.visa, value: demoProfile.visa },
+          { label: content.profile.region, value: content.profile.regionValue },
+          { label: content.profile.industry, value: content.profile.industryValue },
+        ],
+      }
+      return { title: itemTitle(item.title), description: itemDisplayDescription(item) }
+    }
     return {
-      title: copy.bundleTitle,
+      title: copy.exportTitle,
       generatedAtLabel: copy.generatedAtLabel,
       generatedAt: new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(now),
       filenameDate: now.toISOString().slice(0, 10),
       sections: [
-        { title: copy.bundleTitle, entries: result.evidenceBundle.filter((item) => included[item.id] ?? item.included).map((item) => ({ title: itemTitle(item.title), description: itemDisplayDescription(item) })) },
+        { title: copy.exportContentTitle, entries: result.evidenceBundle.filter((item) => included[item.id] ?? item.included).map(evidenceEntry) },
         { title: copy.primary, entries: result.primaryInstitution ? [institutionEntry(result.primaryInstitution)] : [] },
         { title: copy.alternatives, entries: result.alternativeInstitutions.map(institutionEntry) },
       ],
