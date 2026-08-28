@@ -1,5 +1,5 @@
 import type { ActionGuidanceResult, ObligationItem, RequiredDocument, RuleEvidence } from '../features/action-guidance/types'
-import type { AnalysisResult, ClarificationQuestion, ConfirmedFacts, EventCandidate, FactAnswers, FactKey, QuestionOption } from '../features/fact-confirmation/types'
+import type { AnalysisResult, ClarificationQuestion, ConfirmedFacts, EventCandidate, FactAnswers, FactKey } from '../features/fact-confirmation/types'
 import type { EvidenceBundleItem, HandoffResult, InstitutionCandidate } from '../features/institution-handoff/types'
 import type { DemoProfile } from '../types/profile'
 import type {
@@ -20,6 +20,7 @@ import type {
 } from './contracts'
 import { resolveActionEvaluationStatus } from './actionState'
 import { buildPendingActionBundleItems, canonicalDemoProfile, demoReviewDate } from './guidancePolicy'
+import { optionFromApi } from './factOptionMapping'
 
 const factKeys: FactKey[] = ['eventType', 'occurredAt', 'employmentContractEndedAt', 'actor', 'documentsProvided', 'wantsWorkplaceChange']
 const isFactKey = (value: string): value is FactKey => factKeys.includes(value as FactKey)
@@ -42,30 +43,6 @@ const promptByFact: Record<FactKey, string> = {
 const reasonByFact: Record<FactKey, string> = {
   eventType: 'eventTypeReason', occurredAt: 'occurredAtReason', employmentContractEndedAt: 'employmentContractEndedAtReason', actor: 'actorReason',
   documentsProvided: 'documentsReason', wantsWorkplaceChange: 'changeReason',
-}
-
-function optionFromApi(factKey: FactKey, key: string): QuestionOption {
-  if (factKey === 'eventType') {
-    if (key.includes('contract')) return { value: 'contract_ended', labelKey: 'contractEnded' }
-    if (key.includes('employer') || key.includes('termination')) return { value: 'dismissed', labelKey: 'dismissed' }
-    return { value: 'other', labelKey: 'other' }
-  }
-  if (factKey === 'actor') {
-    if (key.includes('employer')) return { value: 'employer', labelKey: 'actorEmployer' }
-    if (key.includes('mutual')) return { value: 'mutual', labelKey: 'actorMutual' }
-    return { value: 'unknown', labelKey: 'actorUnknown' }
-  }
-  if (factKey === 'documentsProvided') {
-    if (key.includes('not') || key.includes('no')) return { value: 'no', labelKey: 'no' }
-    if (key.includes('unknown')) return { value: 'unknown', labelKey: 'unknown' }
-    return { value: 'yes', labelKey: 'yes' }
-  }
-  if (factKey === 'wantsWorkplaceChange') {
-    if (key.includes('not') || key.endsWith('_no')) return { value: 'no', labelKey: 'no' }
-    if (key.includes('undecided') || key.includes('unknown')) return { value: 'undecided', labelKey: 'undecided' }
-    return { value: 'yes', labelKey: 'yes' }
-  }
-  return { value: key, labelKey: key }
 }
 
 function questionFromApi(question: AnalyzeFactsResponse['questions'][number]): ClarificationQuestion | null {
